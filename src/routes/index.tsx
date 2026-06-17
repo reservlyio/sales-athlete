@@ -1,29 +1,226 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { AppShell } from "@/components/AppShell";
+import { todayISO, fmtDate } from "@/lib/crm";
+import { Flame, Trophy, Target, Phone } from "lucide-react";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
-    ],
-  }),
-  component: Index,
+  head: () => ({ meta: [{ title: "Today — Sales Command Center" }] }),
+  component: Dashboard,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+type CallRow = { call_date: string };
+type Lead = { id: string; company: string; phone: string | null; next_follow_up: string | null };
+type Settings = { daily_goal: number; work_days: number[] };
+
+function startOfWeek(d: Date) {
+  const x = new Date(d);
+  const day = (x.getDay() + 6) % 7; // Mon=0
+  x.setDate(x.getDate() - day);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function toISO(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function computeStreak(byDay: Map<string, number>, goal: number, workDays: number[]) {
+  const isWork = (d: Date) => workDays.includes(d.getDay());
+  let streak = 0;
+  const cur = new Date();
+  // If today is work day and not yet hit, start from yesterday
+  const todayCount = byDay.get(toISO(cur)) ?? 0;
+  if (isWork(cur) && todayCount < goal) cur.setDate(cur.getDate() - 1);
+  while (true) {
+    if (!isWork(cur)) {
+      cur.setDate(cur.getDate() - 1);
+      if (streak > 365) break;
+      continue;
+    }
+    const c = byDay.get(toISO(cur)) ?? 0;
+    if (c >= goal) {
+      streak++;
+      cur.setDate(cur.getDate() - 1);
+    } else break;
+    if (streak > 365) break;
+  }
+  return streak;
+}
+
+function Dashboard() {
+  const today = todayISO();
+
+  const settingsQ = useQuery({
+    queryKey: ["settings"],
+    queryFn: async (): Promise<Settings> => {
+      const { data, error } = await supabase.from("app_settings").select("*").eq("id", 1).single();
+      if (error) throw error;
+      return data as Settings;
+    },
+  });
+  const goal = settingsQ.data?.daily_goal ?? 50;
+  const workDays = settingsQ.data?.work_days ?? [1, 2, 3, 4, 5];
+
+  const callsQ = useQuery({
+    queryKey: ["calls-90"],
+    queryFn: async (): Promise<CallRow[]> => {
+      const from = new Date();
+      from.setDate(from.getDate() - 90);
+      const { data, error } = await supabase
+        .from("call_logs")
+        .select("call_date")
+        .gte("call_date", toISO(from));
+      if (error) throw error;
+      return data as CallRow[];
+    },
+  });
+
+  const followupsQ = useQuery({
+    queryKey: ["followups-today", today],
+    queryFn: async (): Promise<Lead[]> => {
+      const { data, error } = await supabase
+        .from("leads")
+        .select("id,company,phone,next_follow_up")
+        .lte("next_follow_up", today)
+        .neq("deal_stage", "client")
+        .neq("deal_stage", "lost")
+        .order("next_follow_up", { ascending: true })
+        .limit(50);
+      if (error) throw error;
+      return (data ?? []) as Lead[];
+    },
+  });
+
+  const stats = useMemo(() => {
+    const byDay = new Map<string, number>();
+    (callsQ.data ?? []).forEach((r) => byDay.set(r.call_date, (byDay.get(r.call_date) ?? 0) + 1));
+    const todayCalls = byDay.get(today) ?? 0;
+    const sow = startOfWeek(new Date());
+    const lastSow = new Date(sow);
+    lastSow.setDate(lastSow.getDate() - 7);
+    let thisWeek = 0,
+      lastWeek = 0;
+    byDay.forEach((c, d) => {
+      const dd = new Date(d + "T00:00:00");
+      if (dd >= sow) thisWeek += c;
+      else if (dd >= lastSow && dd < sow) lastWeek += c;
+    });
+    const streak = computeStreak(byDay, goal, workDays);
+    return { todayCalls, thisWeek, lastWeek, streak };
+  }, [callsQ.data, goal, workDays, today]);
+
+  const pct = Math.min(100, Math.round((stats.todayCalls / goal) * 100));
+  const diff = stats.thisWeek - stats.lastWeek;
+  const newRecord = stats.thisWeek > stats.lastWeek && stats.thisWeek > 0;
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <AppShell>
+      <header className="mb-6">
+        <div className="text-xs uppercase tracking-widest text-muted-foreground">
+          {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+        </div>
+        <h1 className="text-3xl md:text-4xl font-bold mt-1">Today's mission</h1>
+      </header>
+
+      {/* Target */}
+      <section className="bg-card rounded-xl p-5 border border-border mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Target className="size-4" /> Today's calls
+          </div>
+          <Link to="/settings" className="text-xs text-muted-foreground hover:text-primary">
+            Goal: {goal}
+          </Link>
+        </div>
+        <div className="flex items-baseline gap-2 mb-3">
+          <span className="stat-num text-5xl md:text-6xl font-bold text-primary">{stats.todayCalls}</span>
+          <span className="stat-num text-2xl text-muted-foreground">/ {goal}</span>
+          <span className="ml-auto text-sm text-muted-foreground stat-num">{pct}%</span>
+        </div>
+        <div className="progress-track">
+          <div className="progress-fill" style={{ width: `${pct}%` }} />
+        </div>
+        {stats.todayCalls >= goal && (
+          <div className="mt-3 text-sm text-success font-semibold">✓ Goal hit — streak secured.</div>
+        )}
+      </section>
+
+      {/* Streak + week */}
+      <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4">
+        <div className="bg-card rounded-xl p-5 border border-border">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+            <Flame className="size-4 text-streak" /> Current streak
+          </div>
+          <div className="stat-num text-4xl font-bold text-streak">{stats.streak}</div>
+          <div className="text-xs text-muted-foreground mt-1">{stats.streak === 1 ? "day" : "days"}</div>
+        </div>
+        <div className="bg-card rounded-xl p-5 border border-border">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+            <Trophy className="size-4 text-warning" /> This week
+          </div>
+          <div className="stat-num text-4xl font-bold">{stats.thisWeek}</div>
+          <div className="text-xs text-muted-foreground mt-1 stat-num">
+            Last: {stats.lastWeek}{" "}
+            {diff !== 0 && (
+              <span className={diff > 0 ? "text-success" : "text-destructive"}>
+                ({diff > 0 ? "+" : ""}
+                {diff})
+              </span>
+            )}
+          </div>
+          {newRecord && <div className="mt-2 text-xs font-bold text-warning">🏆 New record</div>}
+        </div>
+      </div>
+
+      {/* Follow-ups */}
+      <section className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div>
+            <h2 className="font-semibold">Follow up today</h2>
+            <p className="text-xs text-muted-foreground">First priority. Hit these before fresh leads.</p>
+          </div>
+          <span className="stat-num text-sm bg-warning/20 text-warning px-2 py-0.5 rounded-md font-semibold">
+            {followupsQ.data?.length ?? 0}
+          </span>
+        </div>
+        {followupsQ.isLoading ? (
+          <div className="p-5 text-muted-foreground text-sm">Loading…</div>
+        ) : (followupsQ.data ?? []).length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground text-sm">
+            Nothing due. Go hunt new leads. 🎯
+          </div>
+        ) : (
+          <ul className="divide-y divide-border">
+            {(followupsQ.data ?? []).map((l) => (
+              <li key={l.id}>
+                <Link
+                  to="/leads/$id"
+                  params={{ id: l.id }}
+                  className="flex items-center justify-between px-5 py-3 hover:bg-accent/40"
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{l.company}</div>
+                    <div className="text-xs text-muted-foreground stat-num">
+                      Due {fmtDate(l.next_follow_up)} {l.phone && `· ${l.phone}`}
+                    </div>
+                  </div>
+                  {l.phone && (
+                    <a
+                      href={`tel:${l.phone}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="ml-3 inline-flex items-center gap-1 bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-semibold"
+                    >
+                      <Phone className="size-3" /> Call
+                    </a>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </AppShell>
   );
 }
