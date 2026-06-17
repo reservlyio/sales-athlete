@@ -14,7 +14,131 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_settings: {
+        Row: {
+          daily_goal: number
+          id: number
+          updated_at: string
+          work_days: number[]
+        }
+        Insert: {
+          daily_goal?: number
+          id?: number
+          updated_at?: string
+          work_days?: number[]
+        }
+        Update: {
+          daily_goal?: number
+          id?: number
+          updated_at?: string
+          work_days?: number[]
+        }
+        Relationships: []
+      }
+      call_logs: {
+        Row: {
+          call_date: string
+          company: string
+          created_at: string
+          follow_up_date: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          result: string
+        }
+        Insert: {
+          call_date?: string
+          company: string
+          created_at?: string
+          follow_up_date?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          result: string
+        }
+        Update: {
+          call_date?: string
+          company?: string
+          created_at?: string
+          follow_up_date?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          result?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          called: boolean
+          company: string
+          contact_name: string | null
+          created_at: string
+          deal_stage: string
+          email: string | null
+          email_sent: boolean
+          follow_up_source: string | null
+          id: string
+          last_call_result: string | null
+          last_contact_date: string | null
+          location: string | null
+          next_follow_up: string | null
+          notes: string | null
+          phone: string | null
+          title: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          called?: boolean
+          company: string
+          contact_name?: string | null
+          created_at?: string
+          deal_stage?: string
+          email?: string | null
+          email_sent?: boolean
+          follow_up_source?: string | null
+          id?: string
+          last_call_result?: string | null
+          last_contact_date?: string | null
+          location?: string | null
+          next_follow_up?: string | null
+          notes?: string | null
+          phone?: string | null
+          title?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          called?: boolean
+          company?: string
+          contact_name?: string | null
+          created_at?: string
+          deal_stage?: string
+          email?: string | null
+          email_sent?: boolean
+          follow_up_source?: string | null
+          id?: string
+          last_call_result?: string | null
+          last_contact_date?: string | null
+          location?: string | null
+          next_follow_up?: string | null
+          notes?: string | null
+          phone?: string | null
+          title?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
