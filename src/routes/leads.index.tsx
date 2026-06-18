@@ -8,7 +8,7 @@ import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { importLeads } from "@/lib/import.functions";
 import { analyzeObjections } from "@/lib/analytics.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3, Undo2 } from "lucide-react";
+import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/leads/")({
@@ -62,18 +62,23 @@ function LeadsPage() {
     queryKey: ["leads-list", tab, limit, search],
     enabled: tab !== "analytics",
     queryFn: async (): Promise<Lead[]> => {
-      const cols = "id,company,contact_name,phone,email,location,deal_stage,called,email_sent,next_follow_up,created_at";
+      const cols =
+        "id,company,contact_name,phone,email,location,deal_stage,called,email_sent,next_follow_up,created_at";
 
       if (tab === "all") {
         const base = supabase
-          .from("leads").select(cols)
+          .from("leads")
+          .select(cols)
           .eq("called", false)
-          .neq("deal_stage", "lost").neq("deal_stage", "client")
+          .neq("deal_stage", "lost")
+          .neq("deal_stage", "client")
           .order("created_at", { ascending: true });
         const followups = supabase
-          .from("leads").select(cols)
+          .from("leads")
+          .select(cols)
           .lte("next_follow_up", today)
-          .neq("deal_stage", "client").neq("deal_stage", "lost")
+          .neq("deal_stage", "client")
+          .neq("deal_stage", "lost")
           .order("next_follow_up", { ascending: true });
 
         let bq = base.limit(limit);
@@ -141,36 +146,6 @@ function LeadsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Undo called — sets called=false and deletes the most recent call log for this lead
-  const undoCalled = useMutation({
-    mutationFn: async (leadId: string) => {
-      // Delete most recent call log for this lead
-      const { data: logs } = await supabase
-        .from("call_logs")
-        .select("id")
-        .eq("lead_id", leadId)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (logs && logs.length > 0) {
-        await supabase.from("call_logs").delete().eq("id", logs[0].id);
-      }
-      // Reset lead
-      const { error } = await supabase.from("leads").update({
-        called: false,
-        last_call_result: null,
-        deal_stage: "new_lead",
-      }).eq("id", leadId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Call undone");
-      qc.invalidateQueries({ queryKey: ["leads-list"] });
-      qc.invalidateQueries({ queryKey: ["leads-total"] });
-      qc.invalidateQueries({ queryKey: ["analytics-calls"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
   const empty = (totalQ.data ?? 0) === 0;
 
   return (
@@ -178,7 +153,9 @@ function LeadsPage() {
       <header className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Leads</h1>
-          <p className="text-xs text-muted-foreground stat-num">{totalQ.data ?? "…"} total in pipeline</p>
+          <p className="text-xs text-muted-foreground stat-num">
+            {totalQ.data ?? "…"} total in pipeline
+          </p>
         </div>
         <div className="flex gap-2">
           {empty && (
@@ -191,7 +168,10 @@ function LeadsPage() {
               {importMut.isPending ? "Importing…" : "Import from Notion"}
             </button>
           )}
-          <Link to="/leads/new" className="inline-flex items-center gap-1 bg-card border border-border rounded-md px-3 py-2 text-sm font-semibold hover:border-primary">
+          <Link
+            to="/leads/new"
+            className="inline-flex items-center gap-1 bg-card border border-border rounded-md px-3 py-2 text-sm font-semibold hover:border-primary"
+          >
             <Plus className="size-4" /> Add
           </Link>
         </div>
@@ -206,9 +186,11 @@ function LeadsPage() {
               tab === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {t.id === "analytics"
-              ? <span className="inline-flex items-center gap-1"><BarChart3 className="size-3.5" /> {t.label}</span>
-              : t.label}
+            {t.id === "analytics" ? (
+              <span className="inline-flex items-center gap-1"><BarChart3 className="size-3.5" /> {t.label}</span>
+            ) : (
+              t.label
+            )}
           </button>
         ))}
       </div>
@@ -232,7 +214,9 @@ function LeadsPage() {
               onChange={(e) => setLimit(Number(e.target.value))}
               className="bg-card border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
             >
-              {[25, 50, 100, 200].map((n) => <option key={n} value={n}>{n}</option>)}
+              {[25, 50, 100, 200].map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
             </select>
           </div>
 
@@ -266,30 +250,15 @@ function LeadsPage() {
                         </div>
                       </Link>
                       <div className="flex gap-1 shrink-0">
-                        {l.called ? (
-                          // Already called — show undo button
-                          <button
-                            title="Undo call (marked by mistake)"
-                            onClick={(e) => { e.preventDefault(); undoCalled.mutate(l.id); }}
-                            disabled={undoCalled.isPending}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors bg-success/20 border-success text-success hover:bg-destructive/20 hover:border-destructive hover:text-destructive"
-                          >
-                            <Phone className="size-3.5" />
-                            Called
-                            <Undo2 className="size-3 opacity-60" />
-                          </button>
-                        ) : (
-                          <button
-                            title="Log call"
-                            onClick={(e) => { e.preventDefault(); setCallSheet(l); }}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors bg-input border-border text-muted-foreground hover:border-primary hover:text-foreground"
-                          >
-                            <Phone className="size-3.5" />
-                            Called
-                          </button>
-                        )}
                         <button
-                          title="Mark as Contacted (email)"
+                          onClick={(e) => { e.preventDefault(); setCallSheet(l); }}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
+                            l.called ? "bg-success/20 border-success text-success" : "bg-input border-border text-muted-foreground hover:border-primary hover:text-foreground"
+                          }`}
+                        >
+                          <Phone className="size-3.5" /> Called
+                        </button>
+                        <button
                           onClick={(e) => {
                             e.preventDefault();
                             quickToggle.mutate({
@@ -301,13 +270,10 @@ function LeadsPage() {
                             });
                           }}
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
-                            l.email_sent
-                              ? "bg-accent border-primary text-primary"
-                              : "bg-input border-border text-muted-foreground hover:border-primary hover:text-foreground"
+                            l.email_sent ? "bg-accent border-primary text-primary" : "bg-input border-border text-muted-foreground hover:border-primary hover:text-foreground"
                           }`}
                         >
-                          <Mail className="size-3.5" />
-                          Contacted
+                          <Mail className="size-3.5" /> Contacted
                         </button>
                       </div>
                     </li>
@@ -349,7 +315,7 @@ function AnalyticsView() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("call_logs")
-        .select("id,lead_id,call_date,result,notes,agent")
+        .select("id,call_date,result,notes,agent")
         .gte("call_date", start)
         .order("call_date", { ascending: true });
       if (error) throw error;
@@ -360,34 +326,27 @@ function AnalyticsView() {
   const runObjections = useServerFn(analyzeObjections);
   const objectionsM = useMutation({
     mutationFn: async () => {
-      const notes = (callsQ.data ?? [])
-        .map((c) => c.notes)
-        .filter((n): n is string => !!n && n.trim().length > 3);
+      const notes = (callsQ.data ?? []).map((c) => c.notes).filter((n): n is string => !!n && n.trim().length > 3);
       return runObjections({ data: { notes } });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const calls = callsQ.data ?? [];
-
-  // Deduplicate by lead_id for unique leads called count
-  const uniqueLeadsCalled = new Set(calls.map((c) => c.lead_id)).size;
-  const total = calls.length; // total call attempts
+  const total = calls.length;
   const transfers = calls.filter((c) => c.result === "Transferred" || c.result === "Decision Maker Reached").length;
   const voicemails = calls.filter((c) => c.result === "Voicemail").length;
   const meetings = calls.filter((c) => c.result === "Meeting Booked").length;
 
-  // Voicemails by agent
   const voicemailsByAgent = new Map<string, number>();
   for (const c of calls) {
     if (c.result === "Voicemail") {
-      const agent = c.agent || "You";
+      const agent = c.agent || "Unknown";
       voicemailsByAgent.set(agent, (voicemailsByAgent.get(agent) ?? 0) + 1);
     }
   }
   const agentVoicemails = Array.from(voicemailsByAgent.entries()).sort((a, b) => b[1] - a[1]);
 
-  // Volume by day
   const byDay = new Map<string, number>();
   for (const c of calls) byDay.set(c.call_date, (byDay.get(c.call_date) ?? 0) + 1);
   const span = range === "day" ? 1 : range === "week" ? 7 : 30;
@@ -418,11 +377,7 @@ function AnalyticsView() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-card border border-border rounded-xl p-4">
-          <div className="text-xs text-muted-foreground">Unique leads called</div>
-          <div className="text-2xl font-bold stat-num mt-1">{uniqueLeadsCalled}</div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">{total} total attempts</div>
-        </div>
+        <Stat label={`Total calls (${rangeLabel.toLowerCase()})`} value={total} />
         <Stat label="Transfers to DM" value={transfers} accent="primary" />
         <Stat label="Voicemails left" value={voicemails} />
         <Stat label="Meetings booked" value={meetings} accent="success" />
