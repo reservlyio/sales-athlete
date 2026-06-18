@@ -8,7 +8,7 @@ import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { importLeads } from "@/lib/import.functions";
 import { analyzeObjections } from "@/lib/analytics.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3 } from "lucide-react";
+import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/leads/")({
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/leads/")({
 });
 
 type Tab = "all" | "called" | "contacted" | "meeting" | "analytics";
+type Range = "day" | "week" | "month";
 
 type Lead = {
   id: string;
@@ -61,25 +62,18 @@ function LeadsPage() {
     queryKey: ["leads-list", tab, limit, search],
     enabled: tab !== "analytics",
     queryFn: async (): Promise<Lead[]> => {
-      const cols =
-        "id,company,contact_name,phone,email,location,deal_stage,called,email_sent,next_follow_up,created_at";
+      const cols = "id,company,contact_name,phone,email,location,deal_stage,called,email_sent,next_follow_up,created_at";
 
-      // "All Leads" = uncontacted OR follow-ups due today. Use two queries, merge, preserve Notion order.
       if (tab === "all") {
         const base = supabase
-          .from("leads")
-          .select(cols)
+          .from("leads").select(cols)
           .eq("called", false)
-          .eq("email_sent", false)
-          .neq("deal_stage", "lost")
-          .neq("deal_stage", "client")
+          .neq("deal_stage", "lost").neq("deal_stage", "client")
           .order("created_at", { ascending: true });
         const followups = supabase
-          .from("leads")
-          .select(cols)
+          .from("leads").select(cols)
           .lte("next_follow_up", today)
-          .neq("deal_stage", "client")
-          .neq("deal_stage", "lost")
+          .neq("deal_stage", "client").neq("deal_stage", "lost")
           .order("next_follow_up", { ascending: true });
 
         let bq = base.limit(limit);
@@ -105,11 +99,11 @@ function LeadsPage() {
 
       let q = supabase.from("leads").select(cols);
       if (tab === "called") {
-        q = q.eq("called", true).order("last_contact_date", { ascending: false, nullsFirst: false });
+        q = q.eq("called", true).order("created_at", { ascending: true });
       } else if (tab === "contacted") {
         q = q.eq("email_sent", true).eq("called", false).order("created_at", { ascending: true });
       } else if (tab === "meeting") {
-        q = q.eq("deal_stage", "meeting_booked").order("updated_at", { ascending: false });
+        q = q.eq("deal_stage", "meeting_booked").order("created_at", { ascending: true });
       }
       if (search.trim()) {
         const s = `%${search.trim()}%`;
@@ -147,6 +141,36 @@ function LeadsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Undo called — sets called=false and deletes the most recent call log for this lead
+  const undoCalled = useMutation({
+    mutationFn: async (leadId: string) => {
+      // Delete most recent call log for this lead
+      const { data: logs } = await supabase
+        .from("call_logs")
+        .select("id")
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (logs && logs.length > 0) {
+        await supabase.from("call_logs").delete().eq("id", logs[0].id);
+      }
+      // Reset lead
+      const { error } = await supabase.from("leads").update({
+        called: false,
+        last_call_result: null,
+        deal_stage: "new_lead",
+      }).eq("id", leadId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Call undone");
+      qc.invalidateQueries({ queryKey: ["leads-list"] });
+      qc.invalidateQueries({ queryKey: ["leads-total"] });
+      qc.invalidateQueries({ queryKey: ["analytics-calls"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const empty = (totalQ.data ?? 0) === 0;
 
   return (
@@ -154,9 +178,7 @@ function LeadsPage() {
       <header className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Leads</h1>
-          <p className="text-xs text-muted-foreground stat-num">
-            {totalQ.data ?? "…"} total in pipeline
-          </p>
+          <p className="text-xs text-muted-foreground stat-num">{totalQ.data ?? "…"} total in pipeline</p>
         </div>
         <div className="flex gap-2">
           {empty && (
@@ -169,16 +191,12 @@ function LeadsPage() {
               {importMut.isPending ? "Importing…" : "Import from Notion"}
             </button>
           )}
-          <Link
-            to="/leads/new"
-            className="inline-flex items-center gap-1 bg-card border border-border rounded-md px-3 py-2 text-sm font-semibold hover:border-primary"
-          >
+          <Link to="/leads/new" className="inline-flex items-center gap-1 bg-card border border-border rounded-md px-3 py-2 text-sm font-semibold hover:border-primary">
             <Plus className="size-4" /> Add
           </Link>
         </div>
       </header>
 
-      {/* Tabs */}
       <div className="flex gap-1 mb-3 bg-card rounded-lg p-1 border border-border overflow-x-auto">
         {TABS.map((t) => (
           <button
@@ -188,11 +206,9 @@ function LeadsPage() {
               tab === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {t.id === "analytics" ? (
-              <span className="inline-flex items-center gap-1"><BarChart3 className="size-3.5" /> {t.label}</span>
-            ) : (
-              t.label
-            )}
+            {t.id === "analytics"
+              ? <span className="inline-flex items-center gap-1"><BarChart3 className="size-3.5" /> {t.label}</span>
+              : t.label}
           </button>
         ))}
       </div>
@@ -201,7 +217,6 @@ function LeadsPage() {
         <AnalyticsView />
       ) : (
         <>
-          {/* Search + page size */}
           <div className="flex gap-2 mb-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -217,13 +232,10 @@ function LeadsPage() {
               onChange={(e) => setLimit(Number(e.target.value))}
               className="bg-card border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
             >
-              {[25, 50, 100, 200].map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
+              {[25, 50, 100, 200].map((n) => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
 
-          {/* List */}
           <div className="bg-card rounded-xl border border-border overflow-hidden">
             {listQ.isLoading ? (
               <div className="p-6 text-sm text-muted-foreground">Loading…</div>
@@ -237,16 +249,10 @@ function LeadsPage() {
                   const dueToday = l.next_follow_up && l.next_follow_up <= today;
                   return (
                     <li key={l.id} className="flex items-center gap-2 px-3 py-2.5 hover:bg-accent/30">
-                      <Link
-                        to="/leads/$id"
-                        params={{ id: l.id }}
-                        className="min-w-0 flex-1"
-                      >
+                      <Link to="/leads/$id" params={{ id: l.id }} className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium truncate">{l.company}</span>
-                          <span
-                            className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${STAGE_COLOR[l.deal_stage] || ""}`}
-                          >
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${STAGE_COLOR[l.deal_stage] || ""}`}>
                             {STAGE_LABEL[l.deal_stage] ?? l.deal_stage}
                           </span>
                           {tab === "all" && dueToday && (
@@ -260,15 +266,28 @@ function LeadsPage() {
                         </div>
                       </Link>
                       <div className="flex gap-1 shrink-0">
-                        <button
-                          title="Log call"
-                          onClick={(e) => { e.preventDefault(); setCallSheet(l); }}
-                          className={`size-8 rounded-md border flex items-center justify-center transition-colors ${
-                            l.called ? "bg-success/20 border-success text-success" : "bg-input border-border text-muted-foreground hover:border-primary"
-                          }`}
-                        >
-                          <Phone className="size-3.5" />
-                        </button>
+                        {l.called ? (
+                          // Already called — show undo button
+                          <button
+                            title="Undo call (marked by mistake)"
+                            onClick={(e) => { e.preventDefault(); undoCalled.mutate(l.id); }}
+                            disabled={undoCalled.isPending}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors bg-success/20 border-success text-success hover:bg-destructive/20 hover:border-destructive hover:text-destructive"
+                          >
+                            <Phone className="size-3.5" />
+                            Called
+                            <Undo2 className="size-3 opacity-60" />
+                          </button>
+                        ) : (
+                          <button
+                            title="Log call"
+                            onClick={(e) => { e.preventDefault(); setCallSheet(l); }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors bg-input border-border text-muted-foreground hover:border-primary hover:text-foreground"
+                          >
+                            <Phone className="size-3.5" />
+                            Called
+                          </button>
+                        )}
                         <button
                           title="Mark as Contacted (email)"
                           onClick={(e) => {
@@ -281,11 +300,14 @@ function LeadsPage() {
                               },
                             });
                           }}
-                          className={`size-8 rounded-md border flex items-center justify-center transition-colors ${
-                            l.email_sent ? "bg-accent border-primary text-primary" : "bg-input border-border text-muted-foreground hover:border-primary"
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
+                            l.email_sent
+                              ? "bg-accent border-primary text-primary"
+                              : "bg-input border-border text-muted-foreground hover:border-primary hover:text-foreground"
                           }`}
                         >
                           <Mail className="size-3.5" />
+                          Contacted
                         </button>
                       </div>
                     </li>
@@ -310,10 +332,9 @@ function LeadsPage() {
   );
 }
 
-type Range = "week" | "month";
-
 function rangeStart(r: Range): string {
   const d = new Date();
+  if (r === "day") return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   if (r === "week") d.setDate(d.getDate() - 6);
   else d.setDate(d.getDate() - 29);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -328,7 +349,7 @@ function AnalyticsView() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("call_logs")
-        .select("id,call_date,result,notes")
+        .select("id,lead_id,call_date,result,notes,agent")
         .gte("call_date", start)
         .order("call_date", { ascending: true });
       if (error) throw error;
@@ -348,16 +369,29 @@ function AnalyticsView() {
   });
 
   const calls = callsQ.data ?? [];
-  const total = calls.length;
+
+  // Deduplicate by lead_id for unique leads called count
+  const uniqueLeadsCalled = new Set(calls.map((c) => c.lead_id)).size;
+  const total = calls.length; // total call attempts
   const transfers = calls.filter((c) => c.result === "Transferred" || c.result === "Decision Maker Reached").length;
   const voicemails = calls.filter((c) => c.result === "Voicemail").length;
   const meetings = calls.filter((c) => c.result === "Meeting Booked").length;
 
+  // Voicemails by agent
+  const voicemailsByAgent = new Map<string, number>();
+  for (const c of calls) {
+    if (c.result === "Voicemail") {
+      const agent = c.agent || "You";
+      voicemailsByAgent.set(agent, (voicemailsByAgent.get(agent) ?? 0) + 1);
+    }
+  }
+  const agentVoicemails = Array.from(voicemailsByAgent.entries()).sort((a, b) => b[1] - a[1]);
+
   // Volume by day
   const byDay = new Map<string, number>();
   for (const c of calls) byDay.set(c.call_date, (byDay.get(c.call_date) ?? 0) + 1);
+  const span = range === "day" ? 1 : range === "week" ? 7 : 30;
   const days: { date: string; count: number }[] = [];
-  const span = range === "week" ? 7 : 30;
   for (let i = span - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
@@ -365,12 +399,12 @@ function AnalyticsView() {
     days.push({ date: iso, count: byDay.get(iso) ?? 0 });
   }
   const maxDay = Math.max(1, ...days.map((d) => d.count));
+  const rangeLabel = range === "day" ? "Today" : range === "week" ? "This week" : "This month";
 
   return (
     <div className="space-y-4">
-      {/* Range toggle */}
       <div className="flex gap-1 bg-card rounded-lg p-1 border border-border w-fit">
-        {(["week", "month"] as Range[]).map((r) => (
+        {(["day", "week", "month"] as Range[]).map((r) => (
           <button
             key={r}
             onClick={() => setRange(r)}
@@ -378,24 +412,52 @@ function AnalyticsView() {
               range === r ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {r === "week" ? "This week" : "This month"}
+            {r === "day" ? "Today" : r === "week" ? "This week" : "This month"}
           </button>
         ))}
       </div>
 
-      {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Stat label="Total calls" value={total} />
+        <div className="bg-card border border-border rounded-xl p-4">
+          <div className="text-xs text-muted-foreground">Unique leads called</div>
+          <div className="text-2xl font-bold stat-num mt-1">{uniqueLeadsCalled}</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">{total} total attempts</div>
+        </div>
         <Stat label="Transfers to DM" value={transfers} accent="primary" />
         <Stat label="Voicemails left" value={voicemails} />
         <Stat label="Meetings booked" value={meetings} accent="success" />
       </div>
 
-      {/* Volume chart */}
+      {agentVoicemails.length > 1 && (
+        <section className="bg-card border border-border rounded-xl p-5">
+          <h3 className="font-semibold text-sm mb-3">Voicemails by agent</h3>
+          <ul className="space-y-2">
+            {agentVoicemails.map(([agent, count]) => (
+              <li key={agent} className="flex items-center gap-3 text-sm">
+                <span className="w-32 truncate text-muted-foreground">{agent}</span>
+                <div className="flex-1 bg-muted rounded-full h-2">
+                  <div className="bg-primary h-2 rounded-full" style={{ width: `${(count / voicemails) * 100}%` }} />
+                </div>
+                <span className="stat-num font-semibold text-xs w-6 text-right">{count}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="bg-card border border-border rounded-xl p-5">
-        <h3 className="font-semibold text-sm mb-3">Call volume by day</h3>
+        <h3 className="font-semibold text-sm mb-3">Call volume — {rangeLabel.toLowerCase()}</h3>
         {callsQ.isLoading ? (
           <div className="text-sm text-muted-foreground">Loading…</div>
+        ) : range === "day" ? (
+          <div className="text-center py-4">
+            <p className="text-3xl font-bold stat-num text-primary">{total}</p>
+            <p className="text-xs text-muted-foreground mt-1">calls made today · Goal: 100</p>
+            <div className="mt-3 bg-muted rounded-full h-2 w-full">
+              <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${Math.min((total / 100) * 100, 100)}%` }} />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">{Math.round((total / 100) * 100)}% of daily goal</p>
+          </div>
         ) : (
           <div className="flex items-end gap-1 h-32">
             {days.map((d) => (
@@ -418,7 +480,6 @@ function AnalyticsView() {
         )}
       </section>
 
-      {/* AI Objections */}
       <section className="bg-card border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-sm inline-flex items-center gap-1.5">
@@ -434,18 +495,26 @@ function AnalyticsView() {
         </div>
         {!objectionsM.data ? (
           <p className="text-xs text-muted-foreground">
-            Click Analyze to let AI cluster objections from your {calls.filter((c) => c.notes).length} notes this {range}.
+            Click Analyze to let AI cluster objections from your {calls.filter((c) => c.notes).length} notes {rangeLabel.toLowerCase()}.
           </p>
         ) : objectionsM.data.objections.length === 0 ? (
           <p className="text-xs text-muted-foreground">No clear objections detected.</p>
         ) : (
-          <ul className="space-y-1.5">
-            {objectionsM.data.objections.map((o) => (
-              <li key={o.label} className="flex items-center justify-between text-sm">
-                <span className="truncate">{o.label}</span>
-                <span className="stat-num text-xs font-semibold text-primary">×{o.count}</span>
-              </li>
-            ))}
+          <ul className="space-y-2">
+            {objectionsM.data.objections.map((o) => {
+              const maxCount = Math.max(...objectionsM.data!.objections.map((x) => x.count));
+              return (
+                <li key={o.label} className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="truncate">{o.label}</span>
+                    <span className="stat-num text-xs font-semibold text-primary ml-2">×{o.count}</span>
+                  </div>
+                  <div className="bg-muted rounded-full h-1.5">
+                    <div className="bg-primary h-1.5 rounded-full" style={{ width: `${(o.count / maxCount) * 100}%` }} />
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -454,8 +523,7 @@ function AnalyticsView() {
 }
 
 function Stat({ label, value, accent }: { label: string; value: number; accent?: "primary" | "success" }) {
-  const color =
-    accent === "primary" ? "text-primary" : accent === "success" ? "text-success" : "text-foreground";
+  const color = accent === "primary" ? "text-primary" : accent === "success" ? "text-success" : "text-foreground";
   return (
     <div className="bg-card border border-border rounded-xl p-4">
       <div className="text-xs text-muted-foreground">{label}</div>
