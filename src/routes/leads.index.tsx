@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
+import { CallLogSheet } from "@/components/CallLogSheet";
 import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { importLeads } from "@/lib/import.functions";
 import { analyzeObjections } from "@/lib/analytics.functions";
