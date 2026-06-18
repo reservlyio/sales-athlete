@@ -45,6 +45,7 @@ function LeadsPage() {
   const [tab, setTab] = useState<Tab>("all");
   const [limit, setLimit] = useState(50);
   const [search, setSearch] = useState("");
+  const [callSheet, setCallSheet] = useState<Lead | null>(null);
 
   const totalQ = useQuery({
     queryKey: ["leads-total"],
