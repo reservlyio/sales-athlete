@@ -296,6 +296,16 @@ function LeadsPage() {
           </div>
         </>
       )}
+      {callSheet && (
+        <CallLogSheet
+          lead={callSheet}
+          onClose={() => setCallSheet(null)}
+          onLogged={() => {
+            qc.invalidateQueries({ queryKey: ["leads-list"] });
+            qc.invalidateQueries({ queryKey: ["leads-total"] });
+          }}
+        />
+      )}
     </AppShell>
   );
 }
