@@ -94,7 +94,7 @@ export function CallLogSheet({
       } else if (lead.deal_stage === "new_lead") {
         patch.deal_stage = "contacted";
       }
-      const { error: e2 } = await supabase.from("leads").update(patch).eq("id", lead.id);
+      const { error: e2 } = await supabase.from("leads").update(patch as never).eq("id", lead.id);
       if (e2) throw e2;
     },
     onSuccess: () => {
