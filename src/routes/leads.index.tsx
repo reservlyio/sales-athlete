@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
+import { CallLogSheet } from "@/components/CallLogSheet";
 import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
+import { importLeads } from "@/lib/import.functions";
 import { analyzeObjections } from "@/lib/analytics.functions";
-import { fetchNotionLeads, fetchNotionFollowUps, fetchNotionAnalytics, markNotionLead } from "@/lib/notion.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { Search, Plus, Phone, Mail, CalendarClock, Sparkles, BarChart3, Undo2 } from "lucide-react";
+import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/leads/")({
@@ -17,6 +19,20 @@ export const Route = createFileRoute("/leads/")({
 type Tab = "all" | "called" | "contacted" | "meeting" | "analytics";
 type Range = "day" | "week" | "month";
 
+type Lead = {
+  id: string;
+  company: string;
+  contact_name: string | null;
+  phone: string | null;
+  email: string | null;
+  location: string | null;
+  deal_stage: string;
+  called: boolean;
+  email_sent: boolean;
+  next_follow_up: string | null;
+  created_at: string;
+};
+
 const TABS: { id: Tab; label: string }[] = [
   { id: "all", label: "All Leads" },
   { id: "called", label: "Called" },
@@ -25,80 +41,160 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "analytics", label: "Analytics" },
 ];
 
-function dealStage(l: { called: boolean; email_sent: boolean; contact_status: string | null; demo_booked: boolean; deal_closed: boolean; follow_up_needed: boolean }) {
-  if (l.deal_closed) return "client";
-  if (l.demo_booked) return "meeting_booked";
-  if (l.contact_status === "Interested" || (l.called && l.follow_up_needed)) return "follow_up";
-  if (l.called || l.email_sent) return "contacted";
-  return "new_lead";
-}
-
 function LeadsPage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("all");
   const [limit, setLimit] = useState(50);
   const [search, setSearch] = useState("");
+  const [callSheet, setCallSheet] = useState<Lead | null>(null);
+
+  const totalQ = useQuery({
+    queryKey: ["leads-total"],
+    queryFn: async () => {
+      const { count } = await supabase.from("leads").select("*", { count: "exact", head: true });
+      return count ?? 0;
+    },
+  });
 
   const today = todayISO();
 
-  const fetchLeads = useServerFn(fetchNotionLeads);
-  const fetchFollowUps = useServerFn(fetchNotionFollowUps);
-  const markLead = useServerFn(markNotionLead);
-
   const listQ = useQuery({
-    queryKey: ["notion-leads", tab, limit, search],
+    queryKey: ["leads-list", tab, limit, search],
     enabled: tab !== "analytics",
-    queryFn: async () => {
+    queryFn: async (): Promise<Lead[]> => {
+      const cols = "id,company,contact_name,phone,email,location,deal_stage,called,email_sent,next_follow_up,created_at";
+
       if (tab === "all") {
-        const [leads, followups] = await Promise.all([
-          fetchLeads({ data: { tab: "all", search, limit } }),
-          fetchFollowUps({ data: { today } }),
-        ]);
+        const base = supabase
+          .from("leads").select(cols)
+          .eq("called", false)
+          .neq("deal_stage", "lost").neq("deal_stage", "client")
+          .order("created_at", { ascending: true });
+        const followups = supabase
+          .from("leads").select(cols)
+          .lte("next_follow_up", today)
+          .neq("deal_stage", "client").neq("deal_stage", "lost")
+          .order("next_follow_up", { ascending: true });
+
+        let bq = base.limit(limit);
+        let fq = followups.limit(100);
+        if (search.trim()) {
+          const s = `%${search.trim()}%`;
+          bq = bq.or(`company.ilike.${s},contact_name.ilike.${s},phone.ilike.${s},email.ilike.${s}`);
+          fq = fq.or(`company.ilike.${s},contact_name.ilike.${s},phone.ilike.${s},email.ilike.${s}`);
+        }
+        const [b, f] = await Promise.all([bq, fq]);
+        if (b.error) throw b.error;
+        if (f.error) throw f.error;
         const seen = new Set<string>();
-        const merged = [];
-        for (const l of followups) { if (!seen.has(l.id)) { seen.add(l.id); merged.push({ ...l, followUpToday: true }); } }
-        for (const l of leads) { if (!seen.has(l.id)) { seen.add(l.id); merged.push({ ...l, followUpToday: false }); } }
+        const merged: Lead[] = [];
+        for (const l of (f.data ?? []) as Lead[]) {
+          if (!seen.has(l.id)) { seen.add(l.id); merged.push(l); }
+        }
+        for (const l of (b.data ?? []) as Lead[]) {
+          if (!seen.has(l.id)) { seen.add(l.id); merged.push(l); }
+        }
         return merged;
       }
-      const leads = await fetchLeads({ data: { tab, search, limit } });
-      return leads.map(l => ({ ...l, followUpToday: false }));
+
+      let q = supabase.from("leads").select(cols);
+      if (tab === "called") {
+        q = q.eq("called", true).order("created_at", { ascending: true });
+      } else if (tab === "contacted") {
+        q = q.eq("email_sent", true).eq("called", false).order("created_at", { ascending: true });
+      } else if (tab === "meeting") {
+        q = q.eq("deal_stage", "meeting_booked").order("created_at", { ascending: true });
+      }
+      if (search.trim()) {
+        const s = `%${search.trim()}%`;
+        q = q.or(`company.ilike.${s},contact_name.ilike.${s},phone.ilike.${s},email.ilike.${s}`);
+      }
+      const { data, error } = await q.limit(limit);
+      if (error) throw error;
+      return (data ?? []) as Lead[];
     },
   });
 
-  const calledMut = useMutation({
-    mutationFn: async ({ pageUrl, called }: { pageUrl: string; called: boolean }) => {
-      return markLead({ data: { pageUrl, called } });
+  const runImport = useServerFn(importLeads);
+  const importMut = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/leads-seed.json");
+      const leads = await res.json();
+      return runImport({ data: { leads } });
     },
-    onSuccess: () => {
-      toast.success("Updated in Notion ✓");
-      qc.invalidateQueries({ queryKey: ["notion-leads"] });
+    onSuccess: (r) => {
+      toast.success(r.skipped ? "Leads already imported" : `Imported ${r.imported} leads`);
+      qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const emailMut = useMutation({
-    mutationFn: async ({ pageUrl, emailSent }: { pageUrl: string; emailSent: boolean }) => {
-      return markLead({ data: { pageUrl, emailSent } });
+  const quickToggle = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Lead> }) => {
+      const { error } = await supabase.from("leads").update(patch).eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Updated in Notion ✓");
-      qc.invalidateQueries({ queryKey: ["notion-leads"] });
+      qc.invalidateQueries({ queryKey: ["leads-list"] });
+      qc.invalidateQueries({ queryKey: ["leads-total"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const leads = listQ.data ?? [];
+  // Undo called — sets called=false and deletes the most recent call log for this lead
+  const undoCalled = useMutation({
+    mutationFn: async (leadId: string) => {
+      // Delete most recent call log for this lead
+      const { data: logs } = await supabase
+        .from("call_logs")
+        .select("id")
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (logs && logs.length > 0) {
+        await supabase.from("call_logs").delete().eq("id", logs[0].id);
+      }
+      // Reset lead
+      const { error } = await supabase.from("leads").update({
+        called: false,
+        last_call_result: null,
+        deal_stage: "new_lead",
+      }).eq("id", leadId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Call undone");
+      qc.invalidateQueries({ queryKey: ["leads-list"] });
+      qc.invalidateQueries({ queryKey: ["leads-total"] });
+      qc.invalidateQueries({ queryKey: ["analytics-calls"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const empty = (totalQ.data ?? 0) === 0;
 
   return (
     <AppShell>
       <header className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Leads</h1>
-          <p className="text-xs text-muted-foreground">Live from Notion</p>
+          <p className="text-xs text-muted-foreground stat-num">{totalQ.data ?? "…"} total in pipeline</p>
         </div>
-        <Link to="/leads/new" className="inline-flex items-center gap-1 bg-card border border-border rounded-md px-3 py-2 text-sm font-semibold hover:border-primary">
-          <Plus className="size-4" /> Add
-        </Link>
+        <div className="flex gap-2">
+          {empty && (
+            <button
+              onClick={() => importMut.mutate()}
+              disabled={importMut.isPending}
+              className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              <Upload className="size-4" />
+              {importMut.isPending ? "Importing…" : "Import from Notion"}
+            </button>
+          )}
+          <Link to="/leads/new" className="inline-flex items-center gap-1 bg-card border border-border rounded-md px-3 py-2 text-sm font-semibold hover:border-primary">
+            <Plus className="size-4" /> Add
+          </Link>
+        </div>
       </header>
 
       <div className="flex gap-1 mb-3 bg-card rounded-lg p-1 border border-border overflow-x-auto">
@@ -142,71 +238,76 @@ function LeadsPage() {
 
           <div className="bg-card rounded-xl border border-border overflow-hidden">
             {listQ.isLoading ? (
-              <div className="p-6 text-sm text-muted-foreground flex items-center gap-2">
-                <span className="animate-spin inline-block w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
-                Loading from Notion…
+              <div className="p-6 text-sm text-muted-foreground">Loading…</div>
+            ) : (listQ.data ?? []).length === 0 ? (
+              <div className="p-10 text-center text-sm text-muted-foreground">
+                {empty ? "No leads yet. Import your Notion CRM above or add one manually." : "Nothing here."}
               </div>
-            ) : leads.length === 0 ? (
-              <div className="p-10 text-center text-sm text-muted-foreground">Nothing here.</div>
             ) : (
               <ul className="divide-y divide-border">
-                {leads.map((l) => {
-                  const stage = dealStage(l);
+                {(listQ.data ?? []).map((l) => {
+                  const dueToday = l.next_follow_up && l.next_follow_up <= today;
                   return (
                     <li key={l.id} className="flex items-center gap-2 px-3 py-2.5 hover:bg-accent/30">
-                      <div className="min-w-0 flex-1">
+                      <Link to="/leads/$id" params={{ id: l.id }} className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium truncate">{l.company}</span>
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${STAGE_COLOR[stage] || ""}`}>
-                            {STAGE_LABEL[stage] ?? stage}
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${STAGE_COLOR[l.deal_stage] || ""}`}>
+                            {STAGE_LABEL[l.deal_stage] ?? l.deal_stage}
                           </span>
-                          {l.followUpToday && (
+                          {tab === "all" && dueToday && (
                             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/20 text-warning inline-flex items-center gap-1">
-                              <CalendarClock className="size-3" />
-                              Follow up {l.outreach_date === today ? "today" : fmtDate(l.outreach_date)}
-                            </span>
-                          )}
-                          {l.notes && (
-                            <span className="text-[10px] text-muted-foreground truncate max-w-[140px]" title={l.notes}>
-                              📝 {l.notes}
+                              <CalendarClock className="size-3" /> Follow up {l.next_follow_up === today ? "today" : fmtDate(l.next_follow_up)}
                             </span>
                           )}
                         </div>
                         <div className="text-xs text-muted-foreground truncate stat-num mt-0.5">
                           {[l.contact_name, l.phone, l.location].filter(Boolean).join(" · ")}
                         </div>
-                      </div>
+                      </Link>
                       <div className="flex gap-1 shrink-0">
                         {l.called ? (
+                          // Already called — show undo button
                           <button
-                            title="Undo call"
-                            onClick={() => calledMut.mutate({ pageUrl: l.id, called: false })}
-                            disabled={calledMut.isPending}
+                            title="Undo call (marked by mistake)"
+                            onClick={(e) => { e.preventDefault(); undoCalled.mutate(l.id); }}
+                            disabled={undoCalled.isPending}
                             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors bg-success/20 border-success text-success hover:bg-destructive/20 hover:border-destructive hover:text-destructive"
                           >
-                            <Phone className="size-3.5" /> Called <Undo2 className="size-3 opacity-60" />
+                            <Phone className="size-3.5" />
+                            Called
+                            <Undo2 className="size-3 opacity-60" />
                           </button>
                         ) : (
                           <button
-                            title="Mark as called"
-                            onClick={() => calledMut.mutate({ pageUrl: l.id, called: true })}
-                            disabled={calledMut.isPending}
+                            title="Log call"
+                            onClick={(e) => { e.preventDefault(); setCallSheet(l); }}
                             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors bg-input border-border text-muted-foreground hover:border-primary hover:text-foreground"
                           >
-                            <Phone className="size-3.5" /> Called
+                            <Phone className="size-3.5" />
+                            Called
                           </button>
                         )}
                         <button
-                          title="Mark as contacted (email)"
-                          onClick={() => emailMut.mutate({ pageUrl: l.id, emailSent: !l.email_sent })}
-                          disabled={emailMut.isPending}
+                          title="Mark as Contacted (email)"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            quickToggle.mutate({
+                              id: l.id,
+                              patch: {
+                                email_sent: !l.email_sent,
+                                deal_stage: !l.email_sent && l.deal_stage === "new_lead" ? "contacted" : l.deal_stage,
+                              },
+                            });
+                          }}
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
                             l.email_sent
                               ? "bg-accent border-primary text-primary"
                               : "bg-input border-border text-muted-foreground hover:border-primary hover:text-foreground"
                           }`}
                         >
-                          <Mail className="size-3.5" /> Contacted
+                          <Mail className="size-3.5" />
+                          Contacted
                         </button>
                       </div>
                     </li>
@@ -217,13 +318,23 @@ function LeadsPage() {
           </div>
         </>
       )}
+      {callSheet && (
+        <CallLogSheet
+          lead={callSheet}
+          onClose={() => setCallSheet(null)}
+          onLogged={() => {
+            qc.invalidateQueries({ queryKey: ["leads-list"] });
+            qc.invalidateQueries({ queryKey: ["leads-total"] });
+          }}
+        />
+      )}
     </AppShell>
   );
 }
 
 function rangeStart(r: Range): string {
   const d = new Date();
-  if (r === "day") return todayISO();
+  if (r === "day") return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   if (r === "week") d.setDate(d.getDate() - 6);
   else d.setDate(d.getDate() - 29);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -231,33 +342,54 @@ function rangeStart(r: Range): string {
 
 function AnalyticsView() {
   const [range, setRange] = useState<Range>("week");
-  const fetchAnalytics = useServerFn(fetchNotionAnalytics);
-  const runObjections = useServerFn(analyzeObjections);
+  const start = rangeStart(range);
 
   const callsQ = useQuery({
-    queryKey: ["notion-analytics", range],
-    queryFn: () => fetchAnalytics({ data: { since: rangeStart(range) } }),
+    queryKey: ["analytics-calls", range],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("call_logs")
+        .select("id,lead_id,call_date,result,notes,agent")
+        .gte("call_date", start)
+        .order("call_date", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 
+  const runObjections = useServerFn(analyzeObjections);
   const objectionsM = useMutation({
     mutationFn: async () => {
-      const notes = (callsQ.data ?? []).map((c: any) => c.notes).filter((n: any): n is string => !!n && n.trim().length > 3);
+      const notes = (callsQ.data ?? [])
+        .map((c) => c.notes)
+        .filter((n): n is string => !!n && n.trim().length > 3);
       return runObjections({ data: { notes } });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const calls = callsQ.data ?? [];
-  const total = calls.length;
-  const uniqueLeads = new Set(calls.map((c: any) => c.id)).size;
-  const interested = calls.filter((c: any) => c.result === "Interested").length;
-  const meetings = calls.filter((c: any) => c.result === "Meeting Booked" || c.demo_booked).length;
-  const rangeLabel = range === "day" ? "Today" : range === "week" ? "This week" : "This month";
 
-  const byDay = new Map<string, number>();
-  for (const c of calls as any[]) {
-    if (c.call_date) byDay.set(c.call_date, (byDay.get(c.call_date) ?? 0) + 1);
+  // Deduplicate by lead_id for unique leads called count
+  const uniqueLeadsCalled = new Set(calls.map((c) => c.lead_id)).size;
+  const total = calls.length; // total call attempts
+  const transfers = calls.filter((c) => c.result === "Transferred" || c.result === "Decision Maker Reached").length;
+  const voicemails = calls.filter((c) => c.result === "Voicemail").length;
+  const meetings = calls.filter((c) => c.result === "Meeting Booked").length;
+
+  // Voicemails by agent
+  const voicemailsByAgent = new Map<string, number>();
+  for (const c of calls) {
+    if (c.result === "Voicemail") {
+      const agent = c.agent || "You";
+      voicemailsByAgent.set(agent, (voicemailsByAgent.get(agent) ?? 0) + 1);
+    }
   }
+  const agentVoicemails = Array.from(voicemailsByAgent.entries()).sort((a, b) => b[1] - a[1]);
+
+  // Volume by day
+  const byDay = new Map<string, number>();
+  for (const c of calls) byDay.set(c.call_date, (byDay.get(c.call_date) ?? 0) + 1);
   const span = range === "day" ? 1 : range === "week" ? 7 : 30;
   const days: { date: string; count: number }[] = [];
   for (let i = span - 1; i >= 0; i--) {
@@ -267,14 +399,18 @@ function AnalyticsView() {
     days.push({ date: iso, count: byDay.get(iso) ?? 0 });
   }
   const maxDay = Math.max(1, ...days.map((d) => d.count));
+  const rangeLabel = range === "day" ? "Today" : range === "week" ? "This week" : "This month";
 
   return (
     <div className="space-y-4">
       <div className="flex gap-1 bg-card rounded-lg p-1 border border-border w-fit">
         {(["day", "week", "month"] as Range[]).map((r) => (
-          <button key={r} onClick={() => range !== r && objectionsM.reset !== undefined && setRange(r)}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium ${range === r ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          <button
+            key={r}
             onClick={() => setRange(r)}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium ${
+              range === r ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
           >
             {r === "day" ? "Today" : r === "week" ? "This week" : "This month"}
           </button>
@@ -284,38 +420,54 @@ function AnalyticsView() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-card border border-border rounded-xl p-4">
           <div className="text-xs text-muted-foreground">Unique leads called</div>
-          <div className="text-2xl font-bold stat-num mt-1">{uniqueLeads}</div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">{total} total calls</div>
+          <div className="text-2xl font-bold stat-num mt-1">{uniqueLeadsCalled}</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">{total} total attempts</div>
         </div>
-        <Stat label="Interested" value={interested} accent="primary" />
+        <Stat label="Transfers to DM" value={transfers} accent="primary" />
+        <Stat label="Voicemails left" value={voicemails} />
         <Stat label="Meetings booked" value={meetings} accent="success" />
-        <div className="bg-card border border-border rounded-xl p-4">
-          <div className="text-xs text-muted-foreground">Daily goal</div>
-          <div className="text-2xl font-bold stat-num mt-1 text-primary">{range === "day" ? `${Math.round((total / 100) * 100)}%` : "—"}</div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">100 calls/day</div>
-        </div>
       </div>
+
+      {agentVoicemails.length > 1 && (
+        <section className="bg-card border border-border rounded-xl p-5">
+          <h3 className="font-semibold text-sm mb-3">Voicemails by agent</h3>
+          <ul className="space-y-2">
+            {agentVoicemails.map(([agent, count]) => (
+              <li key={agent} className="flex items-center gap-3 text-sm">
+                <span className="w-32 truncate text-muted-foreground">{agent}</span>
+                <div className="flex-1 bg-muted rounded-full h-2">
+                  <div className="bg-primary h-2 rounded-full" style={{ width: `${(count / voicemails) * 100}%` }} />
+                </div>
+                <span className="stat-num font-semibold text-xs w-6 text-right">{count}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="bg-card border border-border rounded-xl p-5">
         <h3 className="font-semibold text-sm mb-3">Call volume — {rangeLabel.toLowerCase()}</h3>
         {callsQ.isLoading ? (
-          <div className="text-sm text-muted-foreground">Loading from Notion…</div>
+          <div className="text-sm text-muted-foreground">Loading…</div>
         ) : range === "day" ? (
           <div className="text-center py-4">
             <p className="text-3xl font-bold stat-num text-primary">{total}</p>
-            <p className="text-xs text-muted-foreground mt-1">calls today · Goal: 100</p>
+            <p className="text-xs text-muted-foreground mt-1">calls made today · Goal: 100</p>
             <div className="mt-3 bg-muted rounded-full h-2 w-full">
-              <div className="bg-primary h-2 rounded-full" style={{ width: `${Math.min((total / 100) * 100, 100)}%` }} />
+              <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${Math.min((total / 100) * 100, 100)}%` }} />
             </div>
+            <p className="text-xs text-muted-foreground mt-1">{Math.round((total / 100) * 100)}% of daily goal</p>
           </div>
         ) : (
           <div className="flex items-end gap-1 h-32">
             {days.map((d) => (
               <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0">
                 <div className="flex-1 w-full flex items-end">
-                  <div className="w-full bg-primary/70 hover:bg-primary rounded-t"
+                  <div
+                    className="w-full bg-primary/70 hover:bg-primary rounded-t"
                     style={{ height: `${(d.count / maxDay) * 100}%`, minHeight: d.count > 0 ? 4 : 0 }}
-                    title={`${d.date}: ${d.count}`} />
+                    title={`${d.date}: ${d.count}`}
+                  />
                 </div>
                 {span <= 7 && (
                   <span className="text-[10px] text-muted-foreground stat-num">
@@ -343,10 +495,10 @@ function AnalyticsView() {
         </div>
         {!objectionsM.data ? (
           <p className="text-xs text-muted-foreground">
-            Click Analyze — reads your {calls.filter((c: any) => c.notes).length} call notes {rangeLabel.toLowerCase()}.
+            Click Analyze to let AI cluster objections from your {calls.filter((c) => c.notes).length} notes {rangeLabel.toLowerCase()}.
           </p>
         ) : objectionsM.data.objections.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No objections detected yet.</p>
+          <p className="text-xs text-muted-foreground">No clear objections detected.</p>
         ) : (
           <ul className="space-y-2">
             {objectionsM.data.objections.map((o) => {
