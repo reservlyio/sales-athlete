@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
+import { CallLogSheet } from "@/components/CallLogSheet";
 import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { importLeads } from "@/lib/import.functions";
 import { analyzeObjections } from "@/lib/analytics.functions";
@@ -44,6 +45,7 @@ function LeadsPage() {
   const [tab, setTab] = useState<Tab>("all");
   const [limit, setLimit] = useState(50);
   const [search, setSearch] = useState("");
+  const [callSheet, setCallSheet] = useState<Lead | null>(null);
 
   const totalQ = useQuery({
     queryKey: ["leads-total"],
@@ -259,16 +261,8 @@ function LeadsPage() {
                       </Link>
                       <div className="flex gap-1 shrink-0">
                         <button
-                          title="Mark as Called"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            const patch: Record<string, unknown> = {
-                              called: !l.called,
-                              deal_stage: !l.called && l.deal_stage === "new_lead" ? "contacted" : l.deal_stage,
-                            };
-                            if (!l.called) patch.last_contact_date = today;
-                            quickToggle.mutate({ id: l.id, patch: patch as Partial<Lead> });
-                          }}
+                          title="Log call"
+                          onClick={(e) => { e.preventDefault(); setCallSheet(l); }}
                           className={`size-8 rounded-md border flex items-center justify-center transition-colors ${
                             l.called ? "bg-success/20 border-success text-success" : "bg-input border-border text-muted-foreground hover:border-primary"
                           }`}
@@ -301,6 +295,16 @@ function LeadsPage() {
             )}
           </div>
         </>
+      )}
+      {callSheet && (
+        <CallLogSheet
+          lead={callSheet}
+          onClose={() => setCallSheet(null)}
+          onLogged={() => {
+            qc.invalidateQueries({ queryKey: ["leads-list"] });
+            qc.invalidateQueries({ queryKey: ["leads-total"] });
+          }}
+        />
       )}
     </AppShell>
   );
