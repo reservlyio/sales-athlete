@@ -262,14 +262,12 @@ function LeadsPage() {
                           title="Mark as Called"
                           onClick={(e) => {
                             e.preventDefault();
-                            quickToggle.mutate({
-                              id: l.id,
-                              patch: {
-                                called: !l.called,
-                                last_contact_date: !l.called ? today : l.next_follow_up,
-                                deal_stage: !l.called && l.deal_stage === "new_lead" ? "contacted" : l.deal_stage,
-                              },
-                            });
+                            const patch: Record<string, unknown> = {
+                              called: !l.called,
+                              deal_stage: !l.called && l.deal_stage === "new_lead" ? "contacted" : l.deal_stage,
+                            };
+                            if (!l.called) patch.last_contact_date = today;
+                            quickToggle.mutate({ id: l.id, patch: patch as Partial<Lead> });
                           }}
                           className={`size-8 rounded-md border flex items-center justify-center transition-colors ${
                             l.called ? "bg-success/20 border-success text-success" : "bg-input border-border text-muted-foreground hover:border-primary"
