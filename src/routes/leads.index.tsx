@@ -261,16 +261,8 @@ function LeadsPage() {
                       </Link>
                       <div className="flex gap-1 shrink-0">
                         <button
-                          title="Mark as Called"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            const patch: Record<string, unknown> = {
-                              called: !l.called,
-                              deal_stage: !l.called && l.deal_stage === "new_lead" ? "contacted" : l.deal_stage,
-                            };
-                            if (!l.called) patch.last_contact_date = today;
-                            quickToggle.mutate({ id: l.id, patch: patch as Partial<Lead> });
-                          }}
+                          title="Log call"
+                          onClick={(e) => { e.preventDefault(); setCallSheet(l); }}
                           className={`size-8 rounded-md border flex items-center justify-center transition-colors ${
                             l.called ? "bg-success/20 border-success text-success" : "bg-input border-border text-muted-foreground hover:border-primary"
                           }`}
