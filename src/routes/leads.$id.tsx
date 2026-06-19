@@ -145,10 +145,11 @@ function LeadDetail() {
               type="checkbox"
               checked={lead.called}
               onChange={(e) =>
-                updateLead.mutate({
-                  called: e.target.checked,
-                  last_contact_date: e.target.checked ? todayISO() : lead.last_contact_date,
-                })
+                updateLead.mutate(
+                  e.target.checked
+                    ? { called: true, last_contact_date: todayISO() }
+                    : { called: false, last_contact_date: null, last_call_result: null, deal_stage: "new_lead" }
+                )
               }
               className="size-4 accent-primary"
             />
