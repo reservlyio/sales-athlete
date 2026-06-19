@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { CallLogSheet } from "@/components/CallLogSheet";
 import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
-import { importLeads } from "@/lib/import.functions";
+import { importFromNotion } from "@/lib/notion-import.functions";
 import { analyzeObjections } from "@/lib/analytics.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3 } from "lucide-react";
@@ -120,15 +120,14 @@ function LeadsPage() {
     },
   });
 
-  const runImport = useServerFn(importLeads);
+  const runImport = useServerFn(importFromNotion);
   const importMut = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/leads-seed.json");
-      const leads = await res.json();
-      return runImport({ data: { leads } });
-    },
+    mutationFn: async () => runImport(),
     onSuccess: (r) => {
-      toast.success(r.skipped ? "Leads already imported" : `Imported ${r.imported} leads`);
+      const parts = Object.entries(r.stageCounts)
+        .map(([k, v]) => `${v} ${k.replace("_", " ")}`)
+        .join(" · ");
+      toast.success(`Imported ${r.imported} leads from Notion${parts ? ` — ${parts}` : ""}`);
       qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -158,16 +157,15 @@ function LeadsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {empty && (
-            <button
-              onClick={() => importMut.mutate()}
-              disabled={importMut.isPending}
-              className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50"
-            >
-              <Upload className="size-4" />
-              {importMut.isPending ? "Importing…" : "Import from Notion"}
-            </button>
-          )}
+          <button
+            onClick={() => importMut.mutate()}
+            disabled={importMut.isPending}
+            title="Re-sync all leads from Notion (replaces current list)"
+            className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50"
+          >
+            <Upload className="size-4" />
+            {importMut.isPending ? "Syncing…" : empty ? "Import from Notion" : "Re-sync Notion"}
+          </button>
           <Link
             to="/leads/new"
             className="inline-flex items-center gap-1 bg-card border border-border rounded-md px-3 py-2 text-sm font-semibold hover:border-primary"
