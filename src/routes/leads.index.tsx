@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { CallLogSheet } from "@/components/CallLogSheet";
 import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
-import { importLeads } from "@/lib/import.functions";
+import { importFromNotion } from "@/lib/notion-import.functions";
 import { analyzeObjections } from "@/lib/analytics.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3 } from "lucide-react";
