@@ -348,14 +348,7 @@ function AnalyticsView() {
   const voicemails = calls.filter((c) => c.result === "Voicemail").length;
   const meetings = calls.filter((c) => c.result === "Meeting Booked").length;
 
-  const voicemailsByAgent = new Map<string, number>();
-  for (const c of calls) {
-    if (c.result === "Voicemail") {
-      const agent = c.agent || "Unknown";
-      voicemailsByAgent.set(agent, (voicemailsByAgent.get(agent) ?? 0) + 1);
-    }
-  }
-  const agentVoicemails = Array.from(voicemailsByAgent.entries()).sort((a, b) => b[1] - a[1]);
+  const agentVoicemails: [string, number][] = [];
 
   const byDay = new Map<string, number>();
   for (const c of calls) byDay.set(c.call_date, (byDay.get(c.call_date) ?? 0) + 1);
