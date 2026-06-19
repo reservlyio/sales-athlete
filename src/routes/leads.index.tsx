@@ -120,15 +120,14 @@ function LeadsPage() {
     },
   });
 
-  const runImport = useServerFn(importLeads);
+  const runImport = useServerFn(importFromNotion);
   const importMut = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/leads-seed.json");
-      const leads = await res.json();
-      return runImport({ data: { leads } });
-    },
+    mutationFn: async () => runImport(),
     onSuccess: (r) => {
-      toast.success(r.skipped ? "Leads already imported" : `Imported ${r.imported} leads`);
+      const parts = Object.entries(r.stageCounts)
+        .map(([k, v]) => `${v} ${k.replace("_", " ")}`)
+        .join(" · ");
+      toast.success(`Imported ${r.imported} leads from Notion${parts ? ` — ${parts}` : ""}`);
       qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
