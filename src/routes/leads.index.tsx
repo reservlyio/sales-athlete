@@ -325,7 +325,7 @@ function AnalyticsView() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("call_logs")
-        .select("id,call_date,result,notes,agent")
+        .select("id,call_date,result,notes")
         .gte("call_date", start)
         .order("call_date", { ascending: true });
       if (error) throw error;
