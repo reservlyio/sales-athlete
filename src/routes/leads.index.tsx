@@ -252,7 +252,17 @@ function LeadsPage() {
                       <div className="flex gap-1 shrink-0">
                         <button
                           onClick={(e) => { e.preventDefault(); setCallSheet(l); }}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
+                          onDoubleClick={(e) => {
+                            e.preventDefault();
+                            if (!l.called) return;
+                            quickToggle.mutate({
+                              id: l.id,
+                              patch: { called: false, deal_stage: "new_lead", last_call_result: null, last_contact_date: null } as never,
+                            });
+                            toast.success(`${l.company} moved back to All Leads`);
+                          }}
+                          title={l.called ? "Click to log another call · Double-click to move back to All Leads" : "Log a call"}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors select-none ${
                             l.called ? "bg-success/20 border-success text-success" : "bg-input border-border text-muted-foreground hover:border-primary hover:text-foreground"
                           }`}
                         >
@@ -315,7 +325,7 @@ function AnalyticsView() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("call_logs")
-        .select("id,call_date,result,notes,agent")
+        .select("id,call_date,result,notes")
         .gte("call_date", start)
         .order("call_date", { ascending: true });
       if (error) throw error;
@@ -338,14 +348,7 @@ function AnalyticsView() {
   const voicemails = calls.filter((c) => c.result === "Voicemail").length;
   const meetings = calls.filter((c) => c.result === "Meeting Booked").length;
 
-  const voicemailsByAgent = new Map<string, number>();
-  for (const c of calls) {
-    if (c.result === "Voicemail") {
-      const agent = c.agent || "Unknown";
-      voicemailsByAgent.set(agent, (voicemailsByAgent.get(agent) ?? 0) + 1);
-    }
-  }
-  const agentVoicemails = Array.from(voicemailsByAgent.entries()).sort((a, b) => b[1] - a[1]);
+  const agentVoicemails: [string, number][] = [];
 
   const byDay = new Map<string, number>();
   for (const c of calls) byDay.set(c.call_date, (byDay.get(c.call_date) ?? 0) + 1);
