@@ -157,16 +157,15 @@ function LeadsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {empty && (
-            <button
-              onClick={() => importMut.mutate()}
-              disabled={importMut.isPending}
-              className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50"
-            >
-              <Upload className="size-4" />
-              {importMut.isPending ? "Importing…" : "Import from Notion"}
-            </button>
-          )}
+          <button
+            onClick={() => importMut.mutate()}
+            disabled={importMut.isPending}
+            title="Re-sync all leads from Notion (replaces current list)"
+            className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50"
+          >
+            <Upload className="size-4" />
+            {importMut.isPending ? "Syncing…" : empty ? "Import from Notion" : "Re-sync Notion"}
+          </button>
           <Link
             to="/leads/new"
             className="inline-flex items-center gap-1 bg-card border border-border rounded-md px-3 py-2 text-sm font-semibold hover:border-primary"
