@@ -252,7 +252,17 @@ function LeadsPage() {
                       <div className="flex gap-1 shrink-0">
                         <button
                           onClick={(e) => { e.preventDefault(); setCallSheet(l); }}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
+                          onDoubleClick={(e) => {
+                            e.preventDefault();
+                            if (!l.called) return;
+                            quickToggle.mutate({
+                              id: l.id,
+                              patch: { called: false, deal_stage: "new_lead", last_call_result: null, last_contact_date: null } as never,
+                            });
+                            toast.success(`${l.company} moved back to All Leads`);
+                          }}
+                          title={l.called ? "Click to log another call · Double-click to move back to All Leads" : "Log a call"}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors select-none ${
                             l.called ? "bg-success/20 border-success text-success" : "bg-input border-border text-muted-foreground hover:border-primary hover:text-foreground"
                           }`}
                         >
