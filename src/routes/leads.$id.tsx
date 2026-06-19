@@ -144,13 +144,27 @@ function LeadDetail() {
             <input
               type="checkbox"
               checked={lead.called}
-              onChange={(e) =>
-                updateLead.mutate(
-                  e.target.checked
-                    ? { called: true, last_contact_date: todayISO() }
-                    : { called: false, last_contact_date: null, last_call_result: null, deal_stage: "new_lead" }
-                )
-              }
+              onChange={async (e) => {
+                if (e.target.checked) {
+                  updateLead.mutate({ called: true, last_contact_date: todayISO() });
+                  return;
+                }
+                // Uncheck: reset lead AND wipe its call logs + email_sent so it returns to All Leads
+                const { error: delErr } = await supabase.from("call_logs").delete().eq("lead_id", id);
+                if (delErr) { toast.error(delErr.message); return; }
+                updateLead.mutate({
+                  called: false,
+                  email_sent: false,
+                  last_contact_date: null,
+                  last_call_result: null,
+                  deal_stage: "new_lead",
+                  next_follow_up: null,
+                  follow_up_source: null,
+                });
+                qc.invalidateQueries({ queryKey: ["lead-logs", id] });
+                qc.invalidateQueries({ queryKey: ["leads-list"] });
+                toast.success("Moved back to All Leads");
+              }}
               className="size-4 accent-primary"
             />
             Called
