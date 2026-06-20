@@ -231,9 +231,17 @@ function LeadsPage() {
                       <Link to="/leads/$id" params={{ id: l.id }} className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium truncate">{l.company}</span>
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${STAGE_COLOR[l.deal_stage] || ""}`}>
-                            {STAGE_LABEL[l.deal_stage] ?? l.deal_stage}
-                          </span>
+                          {(() => {
+                            const effectiveStage =
+                              l.deal_stage === "contacted" && !l.email_sent
+                                ? (l.called ? "called_only" : "new_lead")
+                                : l.deal_stage;
+                            const label = effectiveStage === "called_only" ? "Called" : (STAGE_LABEL[effectiveStage] ?? effectiveStage);
+                            const color = effectiveStage === "called_only" ? "bg-accent text-accent-foreground" : (STAGE_COLOR[effectiveStage] || "");
+                            return (
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${color}`}>{label}</span>
+                            );
+                          })()}
                           {tab === "all" && dueToday && (
                             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/20 text-warning inline-flex items-center gap-1">
                               <CalendarClock className="size-3" /> Follow up {l.next_follow_up === today ? "today" : fmtDate(l.next_follow_up)}
