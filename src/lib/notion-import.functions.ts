@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const DATABASE_ID = "91c1b1a4-5272-83f8-8f05-01627cc3d26a";
 const GATEWAY = "https://connector-gateway.lovable.dev/notion/v1";
@@ -23,7 +24,9 @@ function plain(p?: NotionProp): string | null {
   return null;
 }
 
-export const importFromNotion = createServerFn({ method: "POST" }).handler(async () => {
+export const importFromNotion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
   const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
   const NOTION_API_KEY = process.env.NOTION_API_KEY;
   if (!LOVABLE_API_KEY || !NOTION_API_KEY) {
