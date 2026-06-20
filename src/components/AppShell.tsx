@@ -1,5 +1,7 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Users, Phone, Settings as SettingsIcon } from "lucide-react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Home, Users, Phone, Settings as SettingsIcon, LogOut } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const links = [
   { to: "/", label: "Today", icon: Home },
@@ -10,6 +12,14 @@ const links = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  async function handleSignOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
   return (
     <div className="min-h-screen pb-20 md:pb-0 md:pl-56">
       {/* Desktop sidebar */}
@@ -36,6 +46,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+        <button
+          onClick={handleSignOut}
+          className="mt-auto flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <LogOut className="size-4" />
+          Sign out
+        </button>
       </aside>
 
       {/* Mobile bottom nav */}
