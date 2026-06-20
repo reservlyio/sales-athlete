@@ -91,8 +91,6 @@ export function CallLogSheet({
         patch.deal_stage = "meeting_booked";
       } else if (result === "Not Interested") {
         patch.deal_stage = "lost";
-      } else if (lead.deal_stage === "new_lead") {
-        patch.deal_stage = "contacted";
       }
       const { error: e2 } = await supabase.from("leads").update(patch as never).eq("id", lead.id);
       if (e2) throw e2;
