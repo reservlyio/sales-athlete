@@ -9,180 +9,181 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as LeadsRouteImport } from './routes/leads'
-import { Route as CallsRouteImport } from './routes/calls'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as LeadsIndexRouteImport } from './routes/leads.index'
-import { Route as LeadsNewRouteImport } from './routes/leads.new'
-import { Route as LeadsIdRouteImport } from './routes/leads.$id'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
+import { Route as AuthenticatedCallsRouteImport } from './routes/_authenticated/calls'
+import { Route as AuthenticatedLeadsIndexRouteImport } from './routes/_authenticated/leads.index'
+import { Route as AuthenticatedLeadsNewRouteImport } from './routes/_authenticated/leads.new'
+import { Route as AuthenticatedLeadsIdRouteImport } from './routes/_authenticated/leads.$id'
 
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/_authenticated/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/_authenticated/settings',
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LeadsRoute = LeadsRouteImport.update({
-  id: '/leads',
+const AuthenticatedLeadsRoute = AuthenticatedLeadsRouteImport.update({
+  id: '/_authenticated/leads',
   path: '/leads',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CallsRoute = CallsRouteImport.update({
-  id: '/calls',
+const AuthenticatedCallsRoute = AuthenticatedCallsRouteImport.update({
+  id: '/_authenticated/calls',
   path: '/calls',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedLeadsIndexRoute = AuthenticatedLeadsIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedLeadsRoute,
 } as any)
-const LeadsIndexRoute = LeadsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => LeadsRoute,
-} as any)
-const LeadsNewRoute = LeadsNewRouteImport.update({
+const AuthenticatedLeadsNewRoute = AuthenticatedLeadsNewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => LeadsRoute,
+  getParentRoute: () => AuthenticatedLeadsRoute,
 } as any)
-const LeadsIdRoute = LeadsIdRouteImport.update({
+const AuthenticatedLeadsIdRoute = AuthenticatedLeadsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
-  getParentRoute: () => LeadsRoute,
+  getParentRoute: () => AuthenticatedLeadsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/calls': typeof CallsRoute
-  '/leads': typeof LeadsRouteWithChildren
-  '/settings': typeof SettingsRoute
-  '/leads/$id': typeof LeadsIdRoute
-  '/leads/new': typeof LeadsNewRoute
-  '/leads/': typeof LeadsIndexRoute
+  '/calls': typeof AuthenticatedCallsRoute
+  '/leads': typeof AuthenticatedLeadsRouteWithChildren
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/leads/$id': typeof AuthenticatedLeadsIdRoute
+  '/leads/new': typeof AuthenticatedLeadsNewRoute
+  '/leads/': typeof AuthenticatedLeadsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/calls': typeof CallsRoute
-  '/settings': typeof SettingsRoute
-  '/leads/$id': typeof LeadsIdRoute
-  '/leads/new': typeof LeadsNewRoute
-  '/leads': typeof LeadsIndexRoute
+  '/calls': typeof AuthenticatedCallsRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/leads/$id': typeof AuthenticatedLeadsIdRoute
+  '/leads/new': typeof AuthenticatedLeadsNewRoute
+  '/leads': typeof AuthenticatedLeadsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/calls': typeof CallsRoute
-  '/leads': typeof LeadsRouteWithChildren
-  '/settings': typeof SettingsRoute
-  '/leads/$id': typeof LeadsIdRoute
-  '/leads/new': typeof LeadsNewRoute
-  '/leads/': typeof LeadsIndexRoute
+  '/_authenticated/calls': typeof AuthenticatedCallsRoute
+  '/_authenticated/leads': typeof AuthenticatedLeadsRouteWithChildren
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/leads/$id': typeof AuthenticatedLeadsIdRoute
+  '/_authenticated/leads/new': typeof AuthenticatedLeadsNewRoute
+  '/_authenticated/leads/': typeof AuthenticatedLeadsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/calls'
     | '/leads'
     | '/settings'
+    | '/'
     | '/leads/$id'
     | '/leads/new'
     | '/leads/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/calls' | '/settings' | '/leads/$id' | '/leads/new' | '/leads'
+  to: '/calls' | '/settings' | '/' | '/leads/$id' | '/leads/new' | '/leads'
   id:
     | '__root__'
-    | '/'
-    | '/calls'
-    | '/leads'
-    | '/settings'
-    | '/leads/$id'
-    | '/leads/new'
-    | '/leads/'
+    | '/_authenticated/calls'
+    | '/_authenticated/leads'
+    | '/_authenticated/settings'
+    | '/_authenticated/'
+    | '/_authenticated/leads/$id'
+    | '/_authenticated/leads/new'
+    | '/_authenticated/leads/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  CallsRoute: typeof CallsRoute
-  LeadsRoute: typeof LeadsRouteWithChildren
-  SettingsRoute: typeof SettingsRoute
+  AuthenticatedCallsRoute: typeof AuthenticatedCallsRoute
+  AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRouteWithChildren
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/leads': {
-      id: '/leads'
-      path: '/leads'
-      fullPath: '/leads'
-      preLoaderRoute: typeof LeadsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/calls': {
-      id: '/calls'
-      path: '/calls'
-      fullPath: '/calls'
-      preLoaderRoute: typeof CallsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/leads/': {
-      id: '/leads/'
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/leads': {
+      id: '/_authenticated/leads'
+      path: '/leads'
+      fullPath: '/leads'
+      preLoaderRoute: typeof AuthenticatedLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/calls': {
+      id: '/_authenticated/calls'
+      path: '/calls'
+      fullPath: '/calls'
+      preLoaderRoute: typeof AuthenticatedCallsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/leads/': {
+      id: '/_authenticated/leads/'
       path: '/'
       fullPath: '/leads/'
-      preLoaderRoute: typeof LeadsIndexRouteImport
-      parentRoute: typeof LeadsRoute
+      preLoaderRoute: typeof AuthenticatedLeadsIndexRouteImport
+      parentRoute: typeof AuthenticatedLeadsRoute
     }
-    '/leads/new': {
-      id: '/leads/new'
+    '/_authenticated/leads/new': {
+      id: '/_authenticated/leads/new'
       path: '/new'
       fullPath: '/leads/new'
-      preLoaderRoute: typeof LeadsNewRouteImport
-      parentRoute: typeof LeadsRoute
+      preLoaderRoute: typeof AuthenticatedLeadsNewRouteImport
+      parentRoute: typeof AuthenticatedLeadsRoute
     }
-    '/leads/$id': {
-      id: '/leads/$id'
+    '/_authenticated/leads/$id': {
+      id: '/_authenticated/leads/$id'
       path: '/$id'
       fullPath: '/leads/$id'
-      preLoaderRoute: typeof LeadsIdRouteImport
-      parentRoute: typeof LeadsRoute
+      preLoaderRoute: typeof AuthenticatedLeadsIdRouteImport
+      parentRoute: typeof AuthenticatedLeadsRoute
     }
   }
 }
 
-interface LeadsRouteChildren {
-  LeadsIdRoute: typeof LeadsIdRoute
-  LeadsNewRoute: typeof LeadsNewRoute
-  LeadsIndexRoute: typeof LeadsIndexRoute
+interface AuthenticatedLeadsRouteChildren {
+  AuthenticatedLeadsIdRoute: typeof AuthenticatedLeadsIdRoute
+  AuthenticatedLeadsNewRoute: typeof AuthenticatedLeadsNewRoute
+  AuthenticatedLeadsIndexRoute: typeof AuthenticatedLeadsIndexRoute
 }
 
-const LeadsRouteChildren: LeadsRouteChildren = {
-  LeadsIdRoute: LeadsIdRoute,
-  LeadsNewRoute: LeadsNewRoute,
-  LeadsIndexRoute: LeadsIndexRoute,
+const AuthenticatedLeadsRouteChildren: AuthenticatedLeadsRouteChildren = {
+  AuthenticatedLeadsIdRoute: AuthenticatedLeadsIdRoute,
+  AuthenticatedLeadsNewRoute: AuthenticatedLeadsNewRoute,
+  AuthenticatedLeadsIndexRoute: AuthenticatedLeadsIndexRoute,
 }
 
-const LeadsRouteWithChildren = LeadsRoute._addFileChildren(LeadsRouteChildren)
+const AuthenticatedLeadsRouteWithChildren =
+  AuthenticatedLeadsRoute._addFileChildren(AuthenticatedLeadsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  CallsRoute: CallsRoute,
-  LeadsRoute: LeadsRouteWithChildren,
-  SettingsRoute: SettingsRoute,
+  AuthenticatedCallsRoute: AuthenticatedCallsRoute,
+  AuthenticatedLeadsRoute: AuthenticatedLeadsRouteWithChildren,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
