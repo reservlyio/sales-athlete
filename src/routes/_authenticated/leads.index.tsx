@@ -124,10 +124,7 @@ function LeadsPage() {
   const importMut = useMutation({
     mutationFn: async () => runImport(),
     onSuccess: (r) => {
-      const parts = Object.entries(r.stageCounts)
-        .map(([k, v]) => `${v} ${k.replace("_", " ")}`)
-        .join(" · ");
-      toast.success(`Imported ${r.imported} leads from Notion${parts ? ` — ${parts}` : ""}`);
+      toast.success(`Imported ${r.imported} leads from Notion`);
       qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
