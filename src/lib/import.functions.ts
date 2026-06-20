@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const LeadSchema = z.object({
   company: z.string(),
@@ -15,7 +16,9 @@ const LeadSchema = z.object({
 });
 
 export const importLeads = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
+
     z.object({ leads: z.array(LeadSchema) }).parse(input),
   )
   .handler(async ({ data }) => {

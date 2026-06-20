@@ -11,7 +11,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/leads/")({
+export const Route = createFileRoute("/_authenticated/leads/")({
   head: () => ({ meta: [{ title: "Leads — Sales Command Center" }] }),
   component: LeadsPage,
 });

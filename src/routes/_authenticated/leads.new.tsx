@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/leads/new")({
+export const Route = createFileRoute("/_authenticated/leads/new")({
   head: () => ({ meta: [{ title: "New Lead" }] }),
   component: NewLead,
 });

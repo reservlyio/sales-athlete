@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { fmtDate } from "@/lib/crm";
 
-export const Route = createFileRoute("/calls")({
+export const Route = createFileRoute("/_authenticated/calls")({
   head: () => ({ meta: [{ title: "Call log" }] }),
   component: CallsPage,
 });
