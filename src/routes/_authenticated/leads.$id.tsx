@@ -9,7 +9,7 @@ import { parseFollowUpDate } from "@/lib/ai.functions";
 import { toast } from "sonner";
 import { ArrowLeft, Phone, Mail, Globe, MapPin, Sparkles, X, Trash2 } from "lucide-react";
 
-export const Route = createFileRoute("/leads/$id")({
+export const Route = createFileRoute("/_authenticated/leads/$id")({
   head: () => ({ meta: [{ title: "Lead" }] }),
   component: LeadDetail,
 });

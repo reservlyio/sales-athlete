@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { todayISO, fmtDate } from "@/lib/crm";
 import { Flame, Trophy, Target, Phone } from "lucide-react";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({ meta: [{ title: "Today — Sales Command Center" }] }),
   component: Dashboard,
 });
