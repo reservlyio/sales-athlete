@@ -390,7 +390,7 @@ function AnalyticsView() {
 
   const calls = callsQ.data ?? [];
   const total = calls.length;
-  const transfers = calls.filter((c) => c.result === "Transferred" || c.result === "Decision Maker Reached").length;
+  const transfers = calls.filter((c) => c.result === "Transferred").length;
   const voicemails = calls.filter((c) => c.result === "Voicemail").length;
   const meetings = calls.filter((c) => c.result === "Meeting Booked").length;
 

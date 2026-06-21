@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { CALL_RESULTS, todayISO, fmtDate } from "@/lib/crm";
+import { CALL_RESULTS, OBJECTION_SOURCES, todayISO, fmtDate } from "@/lib/crm";
 import { parseFollowUpDate } from "@/lib/ai.functions";
 import { parseFollowUpRegex } from "@/lib/follow-up-parser";
 import { Phone, X, Sparkles, Copy, Check } from "lucide-react";
@@ -26,6 +26,7 @@ export function CallLogSheet({
   onLogged: () => void;
 }) {
   const [result, setResult] = useState<string>("No Answer");
+  const [objectionSource, setObjectionSource] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [followUp, setFollowUp] = useState("");
   const [copied, setCopied] = useState(false);
@@ -85,6 +86,7 @@ export function CallLogSheet({
         result,
         notes: notes || null,
         follow_up_date: followUp || null,
+        objection_source: result === "Objection/Not Interested" ? objectionSource : null,
       });
       if (e1) throw e1;
       const patch: Record<string, unknown> = {
@@ -99,7 +101,7 @@ export function CallLogSheet({
         patch.deal_stage = "follow_up";
       } else if (result === "Meeting Booked") {
         patch.deal_stage = "meeting_booked";
-      } else if (result === "Not Interested") {
+      } else if (result === "Objection/Not Interested") {
         patch.deal_stage = "lost";
       }
       const { error: e2 } = await supabase.from("leads").update(patch as never).eq("id", lead.id);
@@ -159,7 +161,7 @@ export function CallLogSheet({
                 <button
                   key={r}
                   type="button"
-                  onClick={() => setResult(r)}
+                  onClick={() => { setResult(r); if (r !== "Objection/Not Interested") setObjectionSource(null); }}
                   className={`text-xs py-2.5 px-2 rounded-lg border font-medium transition-colors ${
                     result === r
                       ? "bg-primary text-primary-foreground border-primary"
@@ -170,6 +172,29 @@ export function CallLogSheet({
                 </button>
               ))}
             </div>
+            {result === "Objection/Not Interested" && (
+              <div className="mt-2">
+                <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Came from
+                </label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  {OBJECTION_SOURCES.map((s) => (
+                    <button
+                      key={s.value}
+                      type="button"
+                      onClick={() => setObjectionSource(s.value)}
+                      className={`text-xs py-2 px-2 rounded-lg border font-medium transition-colors ${
+                        objectionSource === s.value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/30 border-border text-foreground hover:border-primary/50"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -199,7 +224,7 @@ export function CallLogSheet({
         <div className="p-4 border-t border-border">
           <button
             onClick={() => log.mutate()}
-            disabled={log.isPending}
+            disabled={log.isPending || (result === "Objection/Not Interested" && !objectionSource)}
             className="w-full bg-gradient-to-r from-primary to-success text-primary-foreground rounded-xl py-3.5 font-bold text-base shadow-lg disabled:opacity-50"
           >
             {log.isPending ? "Saving…" : "Log Call"}

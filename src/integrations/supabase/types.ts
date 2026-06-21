@@ -44,6 +44,7 @@ export type Database = {
           id: string
           lead_id: string | null
           notes: string | null
+          objection_source: string | null
           result: string
         }
         Insert: {
@@ -54,6 +55,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           notes?: string | null
+          objection_source?: string | null
           result: string
         }
         Update: {
@@ -64,6 +66,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           notes?: string | null
+          objection_source?: string | null
           result?: string
         }
         Relationships: [

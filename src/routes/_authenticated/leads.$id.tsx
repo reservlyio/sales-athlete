@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
-import { CALL_RESULTS, DEAL_STAGES, STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
+import { CALL_RESULTS, OBJECTION_SOURCES, DEAL_STAGES, STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { parseFollowUpDate } from "@/lib/ai.functions";
 import { parseFollowUpRegex } from "@/lib/follow-up-parser";
 import { toast } from "sonner";
@@ -236,6 +236,7 @@ function LeadDetail() {
 function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) {
   const [open, setOpen] = useState(false);
   const [result, setResult] = useState<string>("No Answer");
+  const [objectionSource, setObjectionSource] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [followUp, setFollowUp] = useState("");
 
@@ -275,6 +276,7 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
         result,
         notes: notes || null,
         follow_up_date: followUp || null,
+        objection_source: result === "Objection/Not Interested" ? objectionSource : null,
       });
       if (e1) throw e1;
       const patch: Partial<Lead> = {
@@ -289,7 +291,7 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
         patch.deal_stage = "follow_up";
       } else if (result === "Meeting Booked") {
         patch.deal_stage = "meeting_booked";
-      } else if (result === "Not Interested") {
+      } else if (result === "Objection/Not Interested") {
         patch.deal_stage = "lost";
       }
       const { error: e2 } = await supabase.from("leads").update(patch).eq("id", lead.id);
@@ -297,7 +299,7 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
     },
     onSuccess: () => {
       toast.success("Call logged");
-      setNotes(""); setFollowUp(""); setParseHint(null); setResult("No Answer"); setOpen(false);
+      setNotes(""); setFollowUp(""); setParseHint(null); setResult("No Answer"); setObjectionSource(null); setOpen(false);
       onLogged();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -327,7 +329,7 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
             <button
               key={r}
               type="button"
-              onClick={() => setResult(r)}
+              onClick={() => { setResult(r); if (r !== "Objection/Not Interested") setObjectionSource(null); }}
               className={`text-xs py-2 px-2 rounded-md border ${
                 result === r ? "bg-primary text-primary-foreground border-primary" : "bg-input border-border"
               }`}
@@ -336,6 +338,25 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
             </button>
           ))}
         </div>
+        {result === "Objection/Not Interested" && (
+          <div className="mt-1.5">
+            <label className="text-xs text-muted-foreground">Came from</label>
+            <div className="grid grid-cols-2 gap-1.5 mt-1">
+              {OBJECTION_SOURCES.map((s) => (
+                <button
+                  key={s.value}
+                  type="button"
+                  onClick={() => setObjectionSource(s.value)}
+                  className={`text-xs py-2 px-2 rounded-md border ${
+                    objectionSource === s.value ? "bg-primary text-primary-foreground border-primary" : "bg-input border-border"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <div>
         <label className="text-xs text-muted-foreground flex items-center gap-1">
@@ -370,7 +391,7 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
       </div>
       <button
         onClick={() => log.mutate()}
-        disabled={log.isPending}
+        disabled={log.isPending || (result === "Objection/Not Interested" && !objectionSource)}
         className="w-full bg-primary text-primary-foreground rounded-md py-2.5 font-semibold disabled:opacity-50"
       >
         {log.isPending ? "Saving…" : "Save call"}

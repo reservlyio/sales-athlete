@@ -1,12 +1,14 @@
 export const CALL_RESULTS = [
   "No Answer",
   "Voicemail",
-  "Gatekeeper",
   "Transferred",
-  "Decision Maker Reached",
-  "Follow Up Needed",
   "Meeting Booked",
-  "Not Interested",
+  "Objection/Not Interested",
+] as const;
+
+export const OBJECTION_SOURCES = [
+  { value: "gatekeeper", label: "Gatekeeper" },
+  { value: "decision_maker", label: "Decision Maker" },
 ] as const;
 
 export const DEAL_STAGES = [
