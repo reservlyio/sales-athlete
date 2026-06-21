@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { CALL_RESULTS, DEAL_STAGES, STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { parseFollowUpDate } from "@/lib/ai.functions";
+import { parseFollowUpRegex } from "@/lib/follow-up-parser";
 import { toast } from "sonner";
 import { ArrowLeft, Phone, Mail, Globe, MapPin, Sparkles, X, Trash2 } from "lucide-react";
 
@@ -241,9 +242,15 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
   const parser = useServerFn(parseFollowUpDate);
   const [parseHint, setParseHint] = useState<{ date: string; snippet: string | null } | null>(null);
 
-  // Debounced AI parse on note change
+  // Regex first, AI fallback
   useEffect(() => {
-    if (!notes.trim() || notes.trim().length < 5) { setParseHint(null); return; }
+    if (!notes.trim() || notes.trim().length < 3) { setParseHint(null); return; }
+    const local = parseFollowUpRegex(notes, todayISO());
+    if (local.found && local.date) {
+      setParseHint({ date: local.date, snippet: local.snippet });
+      setFollowUp(local.date);
+      return;
+    }
     const t = setTimeout(async () => {
       try {
         const out = await parser({ data: { text: notes, today: todayISO() } });
@@ -252,10 +259,9 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
           setFollowUp(out.date);
         }
       } catch (e: unknown) {
-        // silent — parse hint only
         console.warn(e);
       }
-    }, 800);
+    }, 900);
     return () => clearTimeout(t);
   }, [notes, parser]);
 
@@ -275,10 +281,11 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
         called: true,
         last_contact_date: today,
         last_call_result: result,
+        // Each new call replaces the previous follow-up — clears if none in this note
+        next_follow_up: followUp || null,
+        follow_up_source: followUp ? (notes || null) : null,
       };
       if (followUp) {
-        patch.next_follow_up = followUp;
-        patch.follow_up_source = notes || null;
         patch.deal_stage = "follow_up";
       } else if (result === "Meeting Booked") {
         patch.deal_stage = "meeting_booked";
@@ -374,14 +381,41 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
 
 function NotesEditor({ lead, onSaved }: { lead: Lead; onSaved: () => void }) {
   const [notes, setNotes] = useState(lead.notes ?? "");
+  const parser = useServerFn(parseFollowUpDate);
+  const [hint, setHint] = useState<{ date: string; snippet: string | null } | null>(null);
   useEffect(() => { setNotes(lead.notes ?? ""); }, [lead.notes]);
+
+  // Live-detect dates while typing (regex first, AI fallback)
+  useEffect(() => {
+    if (!notes.trim() || notes.trim().length < 3) { setHint(null); return; }
+    if (notes === (lead.notes ?? "")) { setHint(null); return; }
+    const local = parseFollowUpRegex(notes, todayISO());
+    if (local.found && local.date) { setHint({ date: local.date, snippet: local.snippet }); return; }
+    const t = setTimeout(async () => {
+      try {
+        const out = await parser({ data: { text: notes, today: todayISO() } });
+        if (out.found && out.date) setHint({ date: out.date, snippet: out.snippet });
+      } catch (e) { console.warn(e); }
+    }, 900);
+    return () => clearTimeout(t);
+  }, [notes, lead.notes, parser]);
 
   const save = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("leads").update({ notes }).eq("id", lead.id);
+      const patch: Record<string, unknown> = { notes };
+      if (hint?.date) {
+        patch.next_follow_up = hint.date;
+        patch.follow_up_source = notes || null;
+        if (lead.deal_stage === "new_lead") patch.deal_stage = "follow_up";
+      }
+      const { error } = await supabase.from("leads").update(patch as never).eq("id", lead.id);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Notes saved"); onSaved(); },
+    onSuccess: () => {
+      toast.success(hint?.date ? `Notes saved · follow-up ${fmtDate(hint.date)}` : "Notes saved");
+      setHint(null);
+      onSaved();
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -406,6 +440,16 @@ function NotesEditor({ lead, onSaved }: { lead: Lead; onSaved: () => void }) {
         className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
         placeholder="Persistent notes about this lead…"
       />
+      {hint && (
+        <div className="mt-2 flex items-center gap-2 text-xs bg-primary/10 text-primary rounded-md px-2 py-1.5 border border-primary/30">
+          <Sparkles className="size-3" />
+          On save: follow-up <strong>{fmtDate(hint.date)}</strong>
+          {hint.snippet && <span className="opacity-70">· "{hint.snippet}"</span>}
+          <button type="button" onClick={() => setHint(null)} className="ml-auto opacity-60 hover:opacity-100">
+            <X className="size-3" />
+          </button>
+        </div>
+      )}
     </section>
   );
 }

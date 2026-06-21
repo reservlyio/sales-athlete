@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/leads/")({
   component: LeadsPage,
 });
 
-type Tab = "all" | "called" | "contacted" | "meeting" | "analytics";
+type Tab = "all" | "followups" | "called" | "contacted" | "meeting" | "analytics";
 type Range = "day" | "week" | "month";
 
 type Lead = {
@@ -35,6 +35,7 @@ type Lead = {
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "all", label: "All Leads" },
+  { id: "followups", label: "Follow Ups" },
   { id: "called", label: "Called" },
   { id: "contacted", label: "Contacted" },
   { id: "meeting", label: "Meeting Booked" },
@@ -52,6 +53,20 @@ function LeadsPage() {
     queryKey: ["leads-total"],
     queryFn: async () => {
       const { count } = await supabase.from("leads").select("*", { count: "exact", head: true });
+      return count ?? 0;
+    },
+  });
+
+  const dueCountQ = useQuery({
+    queryKey: ["leads-due-count"],
+    queryFn: async () => {
+      const t = todayISO();
+      const { count } = await supabase
+        .from("leads")
+        .select("*", { count: "exact", head: true })
+        .lte("next_follow_up", t)
+        .neq("deal_stage", "lost")
+        .neq("deal_stage", "client");
       return count ?? 0;
     },
   });
@@ -103,7 +118,17 @@ function LeadsPage() {
       }
 
       let q = supabase.from("leads").select(cols);
-      if (tab === "called") {
+      if (tab === "followups") {
+        const horizon = new Date();
+        horizon.setDate(horizon.getDate() + 7);
+        const horizonISO = `${horizon.getFullYear()}-${String(horizon.getMonth() + 1).padStart(2, "0")}-${String(horizon.getDate()).padStart(2, "0")}`;
+        q = q
+          .not("next_follow_up", "is", null)
+          .lte("next_follow_up", horizonISO)
+          .neq("deal_stage", "lost")
+          .neq("deal_stage", "client")
+          .order("next_follow_up", { ascending: true });
+      } else if (tab === "called") {
         q = q.eq("called", true).order("created_at", { ascending: true });
       } else if (tab === "contacted") {
         q = q.eq("email_sent", true).eq("called", false).order("created_at", { ascending: true });
@@ -138,6 +163,7 @@ function LeadsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["leads-list"] });
       qc.invalidateQueries({ queryKey: ["leads-total"] });
+      qc.invalidateQueries({ queryKey: ["leads-due-count"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -183,6 +209,15 @@ function LeadsPage() {
           >
             {t.id === "analytics" ? (
               <span className="inline-flex items-center gap-1"><BarChart3 className="size-3.5" /> {t.label}</span>
+            ) : t.id === "followups" ? (
+              <span className="inline-flex items-center gap-1.5">
+                {t.label}
+                {(dueCountQ.data ?? 0) > 0 && (
+                  <span className={`text-[10px] stat-num font-bold rounded-full px-1.5 py-0.5 ${tab === t.id ? "bg-primary-foreground/20 text-primary-foreground" : "bg-destructive/20 text-destructive"}`}>
+                    {dueCountQ.data}
+                  </span>
+                )}
+              </span>
             ) : (
               t.label
             )}
@@ -225,7 +260,14 @@ function LeadsPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {(listQ.data ?? []).map((l) => {
-                  const dueToday = l.next_follow_up && l.next_follow_up <= today;
+                  const fu = l.next_follow_up;
+                  let fuBadge: { color: string; label: string } | null = null;
+                  if (fu) {
+                    if (fu < today) fuBadge = { color: "bg-destructive/20 text-destructive", label: `Overdue · ${fmtDate(fu)}` };
+                    else if (fu === today) fuBadge = { color: "bg-warning/25 text-warning", label: "Due today" };
+                    else fuBadge = { color: "bg-primary/15 text-primary", label: `Follow up ${fmtDate(fu)}` };
+                  }
+                  const showFuBadge = fuBadge && (tab === "all" || tab === "followups");
                   return (
                     <li key={l.id} className="flex items-center gap-2 px-3 py-2.5 hover:bg-accent/30">
                       <Link to="/leads/$id" params={{ id: l.id }} className="min-w-0 flex-1">
@@ -242,9 +284,9 @@ function LeadsPage() {
                               <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${color}`}>{label}</span>
                             );
                           })()}
-                          {tab === "all" && dueToday && (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/20 text-warning inline-flex items-center gap-1">
-                              <CalendarClock className="size-3" /> Follow up {l.next_follow_up === today ? "today" : fmtDate(l.next_follow_up)}
+                          {showFuBadge && fuBadge && (
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${fuBadge.color}`}>
+                              <CalendarClock className="size-3" /> {fuBadge.label}
                             </span>
                           )}
                         </div>
@@ -304,6 +346,7 @@ function LeadsPage() {
           onLogged={() => {
             qc.invalidateQueries({ queryKey: ["leads-list"] });
             qc.invalidateQueries({ queryKey: ["leads-total"] });
+            qc.invalidateQueries({ queryKey: ["leads-due-count"] });
           }}
         />
       )}
