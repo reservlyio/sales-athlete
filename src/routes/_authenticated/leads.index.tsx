@@ -57,6 +57,20 @@ function LeadsPage() {
     },
   });
 
+  const dueCountQ = useQuery({
+    queryKey: ["leads-due-count"],
+    queryFn: async () => {
+      const t = todayISO();
+      const { count } = await supabase
+        .from("leads")
+        .select("*", { count: "exact", head: true })
+        .lte("next_follow_up", t)
+        .neq("deal_stage", "lost")
+        .neq("deal_stage", "client");
+      return count ?? 0;
+    },
+  });
+
   const today = todayISO();
 
   const listQ = useQuery({
