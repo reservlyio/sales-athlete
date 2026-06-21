@@ -236,7 +236,14 @@ function LeadsPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {(listQ.data ?? []).map((l) => {
-                  const dueToday = l.next_follow_up && l.next_follow_up <= today;
+                  const fu = l.next_follow_up;
+                  let fuBadge: { color: string; label: string } | null = null;
+                  if (fu) {
+                    if (fu < today) fuBadge = { color: "bg-destructive/20 text-destructive", label: `Overdue · ${fmtDate(fu)}` };
+                    else if (fu === today) fuBadge = { color: "bg-warning/25 text-warning", label: "Due today" };
+                    else fuBadge = { color: "bg-primary/15 text-primary", label: `Follow up ${fmtDate(fu)}` };
+                  }
+                  const showFuBadge = fuBadge && (tab === "all" || tab === "followups");
                   return (
                     <li key={l.id} className="flex items-center gap-2 px-3 py-2.5 hover:bg-accent/30">
                       <Link to="/leads/$id" params={{ id: l.id }} className="min-w-0 flex-1">
@@ -253,9 +260,9 @@ function LeadsPage() {
                               <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${color}`}>{label}</span>
                             );
                           })()}
-                          {tab === "all" && dueToday && (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-warning/20 text-warning inline-flex items-center gap-1">
-                              <CalendarClock className="size-3" /> Follow up {l.next_follow_up === today ? "today" : fmtDate(l.next_follow_up)}
+                          {showFuBadge && fuBadge && (
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${fuBadge.color}`}>
+                              <CalendarClock className="size-3" /> {fuBadge.label}
                             </span>
                           )}
                         </div>
