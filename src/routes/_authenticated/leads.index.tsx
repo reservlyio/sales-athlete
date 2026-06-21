@@ -104,7 +104,17 @@ function LeadsPage() {
       }
 
       let q = supabase.from("leads").select(cols);
-      if (tab === "called") {
+      if (tab === "followups") {
+        const horizon = new Date();
+        horizon.setDate(horizon.getDate() + 7);
+        const horizonISO = `${horizon.getFullYear()}-${String(horizon.getMonth() + 1).padStart(2, "0")}-${String(horizon.getDate()).padStart(2, "0")}`;
+        q = q
+          .not("next_follow_up", "is", null)
+          .lte("next_follow_up", horizonISO)
+          .neq("deal_stage", "lost")
+          .neq("deal_stage", "client")
+          .order("next_follow_up", { ascending: true });
+      } else if (tab === "called") {
         q = q.eq("called", true).order("created_at", { ascending: true });
       } else if (tab === "contacted") {
         q = q.eq("email_sent", true).eq("called", false).order("created_at", { ascending: true });
