@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { CALL_RESULTS, DEAL_STAGES, STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { parseFollowUpDate } from "@/lib/ai.functions";
+import { parseFollowUpRegex } from "@/lib/follow-up-parser";
 import { toast } from "sonner";
 import { ArrowLeft, Phone, Mail, Globe, MapPin, Sparkles, X, Trash2 } from "lucide-react";
 
