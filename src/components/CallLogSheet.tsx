@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { CALL_RESULTS, todayISO, fmtDate } from "@/lib/crm";
 import { parseFollowUpDate } from "@/lib/ai.functions";
+import { parseFollowUpRegex } from "@/lib/follow-up-parser";
 import { Phone, X, Sparkles, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,7 +33,15 @@ export function CallLogSheet({
   const [parseHint, setParseHint] = useState<{ date: string; snippet: string | null } | null>(null);
 
   useEffect(() => {
-    if (!notes.trim() || notes.trim().length < 5) { setParseHint(null); return; }
+    if (!notes.trim() || notes.trim().length < 3) { setParseHint(null); return; }
+    // 1) Regex parse first (free, instant)
+    const local = parseFollowUpRegex(notes, todayISO());
+    if (local.found && local.date) {
+      setParseHint({ date: local.date, snippet: local.snippet });
+      setFollowUp(local.date);
+      return;
+    }
+    // 2) Debounced AI fallback for fuzzy phrasing
     const t = setTimeout(async () => {
       try {
         const out = await parser({ data: { text: notes, today: todayISO() } });
@@ -41,7 +50,7 @@ export function CallLogSheet({
           setFollowUp(out.date);
         }
       } catch (e: unknown) { console.warn(e); }
-    }, 800);
+    }, 900);
     return () => clearTimeout(t);
   }, [notes, parser]);
 
