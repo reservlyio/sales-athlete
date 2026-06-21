@@ -242,9 +242,15 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
   const parser = useServerFn(parseFollowUpDate);
   const [parseHint, setParseHint] = useState<{ date: string; snippet: string | null } | null>(null);
 
-  // Debounced AI parse on note change
+  // Regex first, AI fallback
   useEffect(() => {
-    if (!notes.trim() || notes.trim().length < 5) { setParseHint(null); return; }
+    if (!notes.trim() || notes.trim().length < 3) { setParseHint(null); return; }
+    const local = parseFollowUpRegex(notes, todayISO());
+    if (local.found && local.date) {
+      setParseHint({ date: local.date, snippet: local.snippet });
+      setFollowUp(local.date);
+      return;
+    }
     const t = setTimeout(async () => {
       try {
         const out = await parser({ data: { text: notes, today: todayISO() } });
@@ -253,10 +259,9 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
           setFollowUp(out.date);
         }
       } catch (e: unknown) {
-        // silent — parse hint only
         console.warn(e);
       }
-    }, 800);
+    }, 900);
     return () => clearTimeout(t);
   }, [notes, parser]);
 
