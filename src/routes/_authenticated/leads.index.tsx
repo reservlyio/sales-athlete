@@ -346,6 +346,7 @@ function LeadsPage() {
           onLogged={() => {
             qc.invalidateQueries({ queryKey: ["leads-list"] });
             qc.invalidateQueries({ queryKey: ["leads-total"] });
+            qc.invalidateQueries({ queryKey: ["leads-due-count"] });
           }}
         />
       )}
