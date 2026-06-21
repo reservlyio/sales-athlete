@@ -208,6 +208,15 @@ function LeadsPage() {
           >
             {t.id === "analytics" ? (
               <span className="inline-flex items-center gap-1"><BarChart3 className="size-3.5" /> {t.label}</span>
+            ) : t.id === "followups" ? (
+              <span className="inline-flex items-center gap-1.5">
+                {t.label}
+                {(dueCountQ.data ?? 0) > 0 && (
+                  <span className={`text-[10px] stat-num font-bold rounded-full px-1.5 py-0.5 ${tab === t.id ? "bg-primary-foreground/20 text-primary-foreground" : "bg-destructive/20 text-destructive"}`}>
+                    {dueCountQ.data}
+                  </span>
+                )}
+              </span>
             ) : (
               t.label
             )}
