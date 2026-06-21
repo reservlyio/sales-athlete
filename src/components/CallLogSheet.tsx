@@ -91,10 +91,11 @@ export function CallLogSheet({
         called: true,
         last_contact_date: today,
         last_call_result: result,
+        // Each new call replaces the previous follow-up — clears if none in this note
+        next_follow_up: followUp || null,
+        follow_up_source: followUp ? (notes || null) : null,
       };
       if (followUp) {
-        patch.next_follow_up = followUp;
-        patch.follow_up_source = notes || null;
         patch.deal_stage = "follow_up";
       } else if (result === "Meeting Booked") {
         patch.deal_stage = "meeting_booked";
