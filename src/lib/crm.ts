@@ -1,9 +1,9 @@
 export const CALL_RESULTS = [
   "No Answer",
   "Voicemail",
+  "Objection/Not Interested",
   "Transferred",
   "Meeting Booked",
-  "Objection/Not Interested",
 ] as const;
 
 export const OBJECTION_SOURCES = [

@@ -157,12 +157,14 @@ export function CallLogSheet({
           <div>
             <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Call result</label>
             <div className="grid grid-cols-2 gap-2 mt-2">
-              {CALL_RESULTS.map((r) => (
+              {CALL_RESULTS.map((r, i) => (
                 <button
                   key={r}
                   type="button"
                   onClick={() => { setResult(r); if (r !== "Objection/Not Interested") setObjectionSource(null); }}
                   className={`text-xs py-2.5 px-2 rounded-lg border font-medium transition-colors ${
+                    i === CALL_RESULTS.length - 1 && CALL_RESULTS.length % 2 === 1 ? "col-span-2 mx-auto w-1/2" : ""
+                  } ${
                     result === r
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-muted/30 border-border text-foreground hover:border-primary/50"

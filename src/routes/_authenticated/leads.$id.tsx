@@ -325,12 +325,14 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
       <div>
         <label className="text-xs text-muted-foreground">Result</label>
         <div className="grid grid-cols-2 gap-1.5 mt-1">
-          {CALL_RESULTS.map((r) => (
+          {CALL_RESULTS.map((r, i) => (
             <button
               key={r}
               type="button"
               onClick={() => { setResult(r); if (r !== "Objection/Not Interested") setObjectionSource(null); }}
               className={`text-xs py-2 px-2 rounded-md border ${
+                i === CALL_RESULTS.length - 1 && CALL_RESULTS.length % 2 === 1 ? "col-span-2 mx-auto w-1/2" : ""
+              } ${
                 result === r ? "bg-primary text-primary-foreground border-primary" : "bg-input border-border"
               }`}
             >
