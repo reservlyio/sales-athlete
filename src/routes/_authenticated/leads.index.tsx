@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/leads/")({
   component: LeadsPage,
 });
 
-type Tab = "all" | "called" | "contacted" | "meeting" | "analytics";
+type Tab = "all" | "followups" | "called" | "contacted" | "meeting" | "analytics";
 type Range = "day" | "week" | "month";
 
 type Lead = {
@@ -35,6 +35,7 @@ type Lead = {
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "all", label: "All Leads" },
+  { id: "followups", label: "Follow Ups" },
   { id: "called", label: "Called" },
   { id: "contacted", label: "Contacted" },
   { id: "meeting", label: "Meeting Booked" },
