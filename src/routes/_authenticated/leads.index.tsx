@@ -172,26 +172,26 @@ function LeadsPage() {
 
   return (
     <AppShell>
-      <header className="flex flex-col gap-3 mb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
+      <header className="flex items-center justify-between mb-5">
+        <div>
           <h1 className="text-2xl md:text-3xl font-bold">Leads</h1>
           <p className="text-xs text-muted-foreground stat-num">
             {totalQ.data ?? "…"} total in pipeline
           </p>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex gap-2">
           <button
             onClick={() => importMut.mutate()}
             disabled={importMut.isPending}
             title="Re-sync all leads from Notion (replaces current list)"
-            className="inline-flex flex-1 sm:flex-none justify-center items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50"
           >
             <Upload className="size-4" />
             {importMut.isPending ? "Syncing…" : empty ? "Import from Notion" : "Re-sync Notion"}
           </button>
           <Link
             to="/leads/new"
-            className="inline-flex justify-center items-center gap-1 bg-card border border-border rounded-md px-3 py-2 text-sm font-semibold hover:border-primary"
+            className="inline-flex items-center gap-1 bg-card border border-border rounded-md px-3 py-2 text-sm font-semibold hover:border-primary"
           >
             <Plus className="size-4" /> Add
           </Link>
@@ -269,7 +269,7 @@ function LeadsPage() {
                   }
                   const showFuBadge = fuBadge && (tab === "all" || tab === "followups");
                   return (
-                    <li key={l.id} className="flex flex-col gap-2 px-3 py-3 hover:bg-accent/30 sm:flex-row sm:items-center">
+                    <li key={l.id} className="flex items-center gap-2 px-3 py-2.5 hover:bg-accent/30">
                       <Link to="/leads/$id" params={{ id: l.id }} className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium truncate">{l.company}</span>
@@ -290,11 +290,11 @@ function LeadsPage() {
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground stat-num mt-0.5 break-words sm:truncate">
+                        <div className="text-xs text-muted-foreground truncate stat-num mt-0.5">
                           {[l.contact_name, l.phone, l.location].filter(Boolean).join(" · ")}
                         </div>
                       </Link>
-                      <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+                      <div className="flex gap-1 shrink-0">
                         <button
                           onClick={(e) => { e.preventDefault(); setCallSheet(l); }}
                           onDoubleClick={(e) => {
@@ -307,7 +307,7 @@ function LeadsPage() {
                             toast.success(`${l.company} moved back to All Leads`);
                           }}
                           title={l.called ? "Click to log another call · Double-click to move back to All Leads" : "Log a call"}
-                          className={`inline-flex flex-1 sm:flex-none justify-center items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors select-none ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors select-none ${
                             l.called ? "bg-success/20 border-success text-success" : "bg-input border-border text-muted-foreground hover:border-primary hover:text-foreground"
                           }`}
                         >
@@ -324,7 +324,7 @@ function LeadsPage() {
                               },
                             });
                           }}
-                          className={`inline-flex flex-1 sm:flex-none justify-center items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium transition-colors ${
                             l.email_sent ? "bg-accent border-primary text-primary" : "bg-input border-border text-muted-foreground hover:border-primary hover:text-foreground"
                           }`}
                         >
