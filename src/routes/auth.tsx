@@ -13,7 +13,6 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,18 +27,8 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast.success("Account created. You're signed in.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
       navigate({ to: "/" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Authentication failed");
@@ -55,9 +44,7 @@ function AuthPage() {
         className="w-full max-w-sm space-y-4 rounded-lg border border-border bg-card p-6 shadow-sm"
       >
         <div>
-          <h1 className="text-xl font-semibold text-foreground">
-            {mode === "signin" ? "Sign in" : "Create your account"}
-          </h1>
+          <h1 className="text-xl font-semibold text-foreground">Sign in</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Sales Command Center — owner access only.
           </p>
@@ -78,7 +65,7 @@ function AuthPage() {
           <Input
             id="password"
             type="password"
-            autoComplete={mode === "signin" ? "current-password" : "new-password"}
+            autoComplete="current-password"
             required
             minLength={8}
             value={password}
@@ -86,15 +73,8 @@ function AuthPage() {
           />
         </div>
         <Button type="submit" disabled={loading} className="w-full">
-          {loading ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+          {loading ? "Please wait…" : "Sign in"}
         </Button>
-        <button
-          type="button"
-          onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-          className="block w-full text-center text-xs text-muted-foreground hover:text-foreground"
-        >
-          {mode === "signin" ? "Need an account? Sign up" : "Have an account? Sign in"}
-        </button>
       </form>
     </div>
   );
