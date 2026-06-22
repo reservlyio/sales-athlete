@@ -94,3 +94,10 @@
     transition: width 0.4s ease;
   }
 }
+
+/* Hide Lovable badge */
+#lovable-badge,
+[id="lovable-badge"],
+[id="Lovable-badge"] {
+  display: none !important;
+}
