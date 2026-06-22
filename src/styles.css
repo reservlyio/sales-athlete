@@ -101,3 +101,8 @@
 [id="Lovable-badge"] {
   display: none !important;
 }
+
+/* Hide Lovable badge link */
+a[href*="lovable.dev"][href*="utm_source=lovable-badge"] {
+  display: none !important;
+}
