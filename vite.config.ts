@@ -12,9 +12,4 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
-  // Lovable's sandbox forces Cloudflare regardless of this setting. Outside that sandbox
-  // (e.g. building on Vercel's own CI), this pins the Nitro preset so `vite build` emits a
-  // working Vercel Build Output API bundle instead of silently falling back to a
-  // client-only build with no SSR/server functions.
-  nitro: { preset: "vercel" },
 });
