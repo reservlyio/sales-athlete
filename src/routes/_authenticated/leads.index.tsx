@@ -172,26 +172,26 @@ function LeadsPage() {
 
   return (
     <AppShell>
-      <header className="flex items-center justify-between mb-5">
-        <div>
+      <header className="flex flex-col gap-3 mb-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold">Leads</h1>
           <p className="text-xs text-muted-foreground stat-num">
             {totalQ.data ?? "…"} total in pipeline
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <button
             onClick={() => importMut.mutate()}
             disabled={importMut.isPending}
             title="Re-sync all leads from Notion (replaces current list)"
-            className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            className="inline-flex flex-1 sm:flex-none justify-center items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50"
           >
             <Upload className="size-4" />
             {importMut.isPending ? "Syncing…" : empty ? "Import from Notion" : "Re-sync Notion"}
           </button>
           <Link
             to="/leads/new"
-            className="inline-flex items-center gap-1 bg-card border border-border rounded-md px-3 py-2 text-sm font-semibold hover:border-primary"
+            className="inline-flex justify-center items-center gap-1 bg-card border border-border rounded-md px-3 py-2 text-sm font-semibold hover:border-primary"
           >
             <Plus className="size-4" /> Add
           </Link>
