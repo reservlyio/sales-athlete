@@ -123,7 +123,7 @@ function LeadDetail() {
             <Mail className="size-4" /> Email
           </a>
         )}
-        {lead.website && (
+        {lead.website && /^https?:\/\//i.test(lead.website) && (
           <a href={lead.website} target="_blank" rel="noreferrer" className="bg-card border border-border rounded-md py-2.5 px-3 text-sm font-semibold flex items-center justify-center gap-1.5">
             <Globe className="size-4" /> Site
           </a>
