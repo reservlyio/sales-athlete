@@ -134,8 +134,47 @@ export const importFromNotion = createServerFn({ method: "POST" })
       }
     }
 
-    const toInsert = rows.filter((r) => !existingIds.has(r.notion_page_id));
     const toUpdate = rows.filter((r) => existingIds.has(r.notion_page_id));
+    const candidates = rows.filter((r) => !existingIds.has(r.notion_page_id));
+
+    // One-time migration safety net: leads imported before notion_page_id existed
+    // have it as NULL, so they'd never match above and would be duplicated as
+    // "new" on the first sync after this column was added. Claim them by exact
+    // company-name match instead (only when unambiguous) so they get tagged and
+    // refreshed in place rather than duplicated.
+    const normCompany = (s: string) => s.trim().toLowerCase();
+    const untaggedByCompany = new Map<string, string[]>();
+    {
+      const PAGE = 1000;
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabaseAdmin
+          .from("leads")
+          .select("id,company")
+          .is("notion_page_id", null)
+          .range(from, from + PAGE - 1);
+        if (error) throw new Error(error.message);
+        for (const l of data ?? []) {
+          const key = normCompany(l.company);
+          const list = untaggedByCompany.get(key) ?? [];
+          list.push(l.id);
+          untaggedByCompany.set(key, list);
+        }
+        if (!data || data.length < PAGE) break;
+      }
+    }
+
+    const claimedLeadIds = new Set<string>();
+    const toBackfill: { id: string; row: LeadRow }[] = [];
+    const toInsert: LeadRow[] = [];
+    for (const r of candidates) {
+      const ids = (untaggedByCompany.get(normCompany(r.company)) ?? []).filter((id) => !claimedLeadIds.has(id));
+      if (ids.length === 1) {
+        claimedLeadIds.add(ids[0]);
+        toBackfill.push({ id: ids[0], row: r });
+      } else {
+        toInsert.push(r);
+      }
+    }
 
     let inserted = 0;
     for (let i = 0; i < toInsert.length; i += CHUNK) {
@@ -158,6 +197,23 @@ export const importFromNotion = createServerFn({ method: "POST" })
         location: r.location,
       }));
       const { error } = await supabaseAdmin.from("leads").upsert(slice, { onConflict: "notion_page_id" });
+      if (error) throw new Error(error.message);
+      updated += slice.length;
+    }
+
+    for (let i = 0; i < toBackfill.length; i += CHUNK) {
+      const slice = toBackfill.slice(i, i + CHUNK).map(({ id, row }) => ({
+        id,
+        notion_page_id: row.notion_page_id,
+        company: row.company,
+        website: row.website,
+        contact_name: row.contact_name,
+        title: row.title,
+        phone: row.phone,
+        email: row.email,
+        location: row.location,
+      }));
+      const { error } = await supabaseAdmin.from("leads").upsert(slice);
       if (error) throw new Error(error.message);
       updated += slice.length;
     }
