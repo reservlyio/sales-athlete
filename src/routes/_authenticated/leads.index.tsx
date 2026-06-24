@@ -129,7 +129,7 @@ function LeadsPage() {
           .neq("deal_stage", "client")
           .order("next_follow_up", { ascending: true });
       } else if (tab === "called") {
-        q = q.eq("called", true).order("created_at", { ascending: true });
+        q = q.eq("called", true).order("last_contact_date", { ascending: false });
       } else if (tab === "contacted") {
         q = q.eq("email_sent", true).eq("called", false).order("created_at", { ascending: true });
       } else if (tab === "meeting") {
