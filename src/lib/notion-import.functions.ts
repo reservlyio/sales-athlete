@@ -61,6 +61,7 @@ export const importFromNotion = createServerFn({ method: "POST" })
     }
 
     type LeadRow = {
+      notion_page_id: string;
       company: string;
       website: string | null;
       contact_name: string | null;
@@ -100,6 +101,7 @@ export const importFromNotion = createServerFn({ method: "POST" })
       const called = !!pr["Called"]?.checkbox;
 
       rows.push({
+        notion_page_id: page.id,
         company,
         website,
         contact_name: firstName,
@@ -115,22 +117,55 @@ export const importFromNotion = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Wipe existing data so re-imports stay consistent with Notion
-    await supabaseAdmin.from("call_logs").delete().not("id", "is", null);
-    await supabaseAdmin.from("leads").delete().not("id", "is", null);
-
+    // Upsert by notion_page_id instead of wiping the table: leads that already
+    // exist locally keep their CRM progress (deal_stage, next_follow_up, notes,
+    // called, call_logs) — only their Notion-sourced contact fields get refreshed.
     const CHUNK = 500;
-    let inserted = 0;
+    const existingIds = new Set<string>();
     for (let i = 0; i < rows.length; i += CHUNK) {
-      const slice = rows.slice(i, i + CHUNK);
+      const slice = rows.slice(i, i + CHUNK).map((r) => r.notion_page_id);
+      const { data, error } = await supabaseAdmin
+        .from("leads")
+        .select("notion_page_id")
+        .in("notion_page_id", slice);
+      if (error) throw new Error(error.message);
+      for (const r of data ?? []) {
+        if (r.notion_page_id) existingIds.add(r.notion_page_id);
+      }
+    }
+
+    const toInsert = rows.filter((r) => !existingIds.has(r.notion_page_id));
+    const toUpdate = rows.filter((r) => existingIds.has(r.notion_page_id));
+
+    let inserted = 0;
+    for (let i = 0; i < toInsert.length; i += CHUNK) {
+      const slice = toInsert.slice(i, i + CHUNK);
       const { error } = await supabaseAdmin.from("leads").insert(slice);
       if (error) throw new Error(error.message);
       inserted += slice.length;
+    }
+
+    let updated = 0;
+    for (let i = 0; i < toUpdate.length; i += CHUNK) {
+      const slice = toUpdate.slice(i, i + CHUNK).map((r) => ({
+        notion_page_id: r.notion_page_id,
+        company: r.company,
+        website: r.website,
+        contact_name: r.contact_name,
+        title: r.title,
+        phone: r.phone,
+        email: r.email,
+        location: r.location,
+      }));
+      const { error } = await supabaseAdmin.from("leads").upsert(slice, { onConflict: "notion_page_id" });
+      if (error) throw new Error(error.message);
+      updated += slice.length;
     }
 
     return {
       fetched: all.length,
       skippedEmpty,
       imported: inserted,
+      updated,
     };
   });

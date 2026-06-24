@@ -197,31 +197,13 @@ function LeadDetail() {
         </div>
       </section>
 
-      {/* Notes with AI date detection */}
-      <NotesEditor lead={lead} onSaved={() => qc.invalidateQueries({ queryKey: ["lead", id] })} />
-
-      {/* History */}
-      <section className="mt-4 bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-border font-semibold text-sm">Call history</div>
-        {(logsQ.data ?? []).length === 0 ? (
-          <div className="p-5 text-sm text-muted-foreground">No calls logged yet.</div>
-        ) : (
-          <ul className="divide-y divide-border text-sm">
-            {(logsQ.data ?? []).map((c) => (
-              <li key={c.id} className="px-5 py-3">
-                <div className="flex justify-between">
-                  <span className="font-medium">{c.result}</span>
-                  <span className="stat-num text-xs text-muted-foreground">{fmtDate(c.call_date)}</span>
-                </div>
-                {c.notes && <p className="text-xs text-muted-foreground mt-1">{c.notes}</p>}
-                {c.follow_up_date && (
-                  <p className="text-xs text-warning mt-1">Follow up: {fmtDate(c.follow_up_date)}</p>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {/* Notes — general note plus the full call-note history, in one place */}
+      <NotesEditor
+        lead={lead}
+        logs={logsQ.data ?? []}
+        logsLoading={logsQ.isLoading}
+        onSaved={() => qc.invalidateQueries({ queryKey: ["lead", id] })}
+      />
 
       <button
         onClick={() => { if (confirm("Delete this lead?")) del.mutate(); }}
@@ -402,7 +384,17 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
   );
 }
 
-function NotesEditor({ lead, onSaved }: { lead: Lead; onSaved: () => void }) {
+function NotesEditor({
+  lead,
+  logs,
+  logsLoading,
+  onSaved,
+}: {
+  lead: Lead;
+  logs: CallLog[];
+  logsLoading: boolean;
+  onSaved: () => void;
+}) {
   const [notes, setNotes] = useState(lead.notes ?? "");
   const parser = useServerFn(parseFollowUpDate);
   const [hint, setHint] = useState<{ date: string; snippet: string | null } | null>(null);
@@ -443,36 +435,65 @@ function NotesEditor({ lead, onSaved }: { lead: Lead; onSaved: () => void }) {
   });
 
   return (
-    <section className="bg-card border border-border rounded-xl p-5">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold text-sm">Notes</h3>
-        {notes !== (lead.notes ?? "") && (
-          <button
-            onClick={() => save.mutate()}
-            disabled={save.isPending}
-            className="text-xs bg-primary text-primary-foreground rounded px-2 py-1 font-semibold"
-          >
-            Save
-          </button>
+    <section className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-sm">Notes</h3>
+          {notes !== (lead.notes ?? "") && (
+            <button
+              onClick={() => save.mutate()}
+              disabled={save.isPending}
+              className="text-xs bg-primary text-primary-foreground rounded px-2 py-1 font-semibold"
+            >
+              Save
+            </button>
+          )}
+        </div>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={4}
+          className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
+          placeholder="Persistent notes about this lead…"
+        />
+        {hint && (
+          <div className="mt-2 flex items-center gap-2 text-xs bg-primary/10 text-primary rounded-md px-2 py-1.5 border border-primary/30">
+            <Sparkles className="size-3" />
+            On save: follow-up <strong>{fmtDate(hint.date)}</strong>
+            {hint.snippet && <span className="opacity-70">· "{hint.snippet}"</span>}
+            <button type="button" onClick={() => setHint(null)} className="ml-auto opacity-60 hover:opacity-100">
+              <X className="size-3" />
+            </button>
+          </div>
         )}
       </div>
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        rows={4}
-        className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
-        placeholder="Persistent notes about this lead…"
-      />
-      {hint && (
-        <div className="mt-2 flex items-center gap-2 text-xs bg-primary/10 text-primary rounded-md px-2 py-1.5 border border-primary/30">
-          <Sparkles className="size-3" />
-          On save: follow-up <strong>{fmtDate(hint.date)}</strong>
-          {hint.snippet && <span className="opacity-70">· "{hint.snippet}"</span>}
-          <button type="button" onClick={() => setHint(null)} className="ml-auto opacity-60 hover:opacity-100">
-            <X className="size-3" />
-          </button>
+
+      {/* All past call notes, right below the general note — one place for everything */}
+      <div className="border-t border-border">
+        <div className="px-5 py-2.5 border-b border-border font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">
+          Call history
         </div>
-      )}
+        {logsLoading ? (
+          <div className="p-5 text-sm text-muted-foreground">Loading…</div>
+        ) : logs.length === 0 ? (
+          <div className="p-5 text-sm text-muted-foreground">No calls logged yet.</div>
+        ) : (
+          <ul className="divide-y divide-border text-sm">
+            {logs.map((c) => (
+              <li key={c.id} className="px-5 py-3">
+                <div className="flex justify-between">
+                  <span className="font-medium">{c.result}</span>
+                  <span className="stat-num text-xs text-muted-foreground">{fmtDate(c.call_date)}</span>
+                </div>
+                {c.notes && <p className="text-xs text-muted-foreground mt-1">{c.notes}</p>}
+                {c.follow_up_date && (
+                  <p className="text-xs text-warning mt-1">Follow up: {fmtDate(c.follow_up_date)}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </section>
   );
 }

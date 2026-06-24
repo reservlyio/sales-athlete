@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { CallLogSheet } from "@/components/CallLogSheet";
@@ -149,7 +149,7 @@ function LeadsPage() {
   const importMut = useMutation({
     mutationFn: async () => runImport(),
     onSuccess: (r) => {
-      toast.success(`Imported ${r.imported} leads from Notion`);
+      toast.success(`Notion sync: ${r.imported} new, ${r.updated} updated`);
       qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -183,7 +183,7 @@ function LeadsPage() {
           <button
             onClick={() => importMut.mutate()}
             disabled={importMut.isPending}
-            title="Re-sync all leads from Notion (replaces current list)"
+            title="Sync leads from Notion — adds new leads and refreshes contact info, never overwrites deal stage, notes, or call history"
             className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50"
           >
             <Upload className="size-4" />
@@ -379,14 +379,34 @@ function AnalyticsView() {
     },
   });
 
-  const runObjections = useServerFn(analyzeObjections);
-  const objectionsM = useMutation({
-    mutationFn: async () => {
-      const notes = (callsQ.data ?? []).map((c) => c.notes).filter((n): n is string => !!n && n.trim().length > 3);
-      return runObjections({ data: { notes } });
+  const leadNotesQ = useQuery({
+    queryKey: ["analytics-lead-notes", range],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("leads")
+        .select("notes")
+        .not("notes", "is", null)
+        .gte("updated_at", start);
+      if (error) throw error;
+      return (data ?? []).map((l) => l.notes).filter((n): n is string => !!n);
     },
-    onError: (e: Error) => toast.error(e.message),
   });
+
+  const objectionNotes = useMemo(() => {
+    const callNotes = (callsQ.data ?? []).map((c) => c.notes).filter((n): n is string => !!n && n.trim().length > 3);
+    const generalNotes = (leadNotesQ.data ?? []).filter((n) => n.trim().length > 3);
+    return Array.from(new Set([...callNotes, ...generalNotes]));
+  }, [callsQ.data, leadNotesQ.data]);
+
+  const runObjections = useServerFn(analyzeObjections);
+  const objectionsQ = useQuery({
+    queryKey: ["analytics-objections", range, objectionNotes],
+    queryFn: () => runObjections({ data: { notes: objectionNotes } }),
+    enabled: !callsQ.isLoading && !leadNotesQ.isLoading && objectionNotes.length > 0,
+  });
+  useEffect(() => {
+    if (objectionsQ.error) toast.error((objectionsQ.error as Error).message);
+  }, [objectionsQ.error]);
 
   const calls = callsQ.data ?? [];
   const total = calls.length;
@@ -487,26 +507,30 @@ function AnalyticsView() {
       <section className="bg-card border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-sm inline-flex items-center gap-1.5">
-            <Sparkles className="size-4 text-primary" /> Top objections from call notes
+            <Sparkles className="size-4 text-primary" /> Top objections from notes
           </h3>
           <button
-            onClick={() => objectionsM.mutate()}
-            disabled={objectionsM.isPending || calls.length === 0}
+            onClick={() => objectionsQ.refetch()}
+            disabled={objectionsQ.isFetching || objectionNotes.length === 0}
             className="text-xs bg-primary text-primary-foreground rounded px-2.5 py-1 font-semibold disabled:opacity-40"
           >
-            {objectionsM.isPending ? "Analyzing…" : objectionsM.data ? "Re-analyze" : "Analyze"}
+            {objectionsQ.isFetching ? "Analyzing…" : "Re-analyze"}
           </button>
         </div>
-        {!objectionsM.data ? (
+        {objectionNotes.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            Click Analyze to let AI cluster objections from your {calls.filter((c) => c.notes).length} notes {rangeLabel.toLowerCase()}.
+            No call or lead notes {rangeLabel.toLowerCase()} yet to analyze.
           </p>
-        ) : objectionsM.data.objections.length === 0 ? (
+        ) : objectionsQ.isLoading ? (
+          <p className="text-xs text-muted-foreground">
+            Analyzing {objectionNotes.length} notes {rangeLabel.toLowerCase()}…
+          </p>
+        ) : (objectionsQ.data?.objections.length ?? 0) === 0 ? (
           <p className="text-xs text-muted-foreground">No clear objections detected.</p>
         ) : (
           <ul className="space-y-2">
-            {objectionsM.data.objections.map((o) => {
-              const maxCount = Math.max(...objectionsM.data!.objections.map((x) => x.count));
+            {objectionsQ.data!.objections.map((o) => {
+              const maxCount = Math.max(...objectionsQ.data!.objections.map((x) => x.count));
               return (
                 <li key={o.label} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">

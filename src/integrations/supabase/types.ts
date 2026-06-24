@@ -95,6 +95,7 @@ export type Database = {
           location: string | null
           next_follow_up: string | null
           notes: string | null
+          notion_page_id: string | null
           phone: string | null
           title: string | null
           updated_at: string
@@ -115,6 +116,7 @@ export type Database = {
           location?: string | null
           next_follow_up?: string | null
           notes?: string | null
+          notion_page_id?: string | null
           phone?: string | null
           title?: string | null
           updated_at?: string
@@ -135,6 +137,7 @@ export type Database = {
           location?: string | null
           next_follow_up?: string | null
           notes?: string | null
+          notion_page_id?: string | null
           phone?: string | null
           title?: string | null
           updated_at?: string
