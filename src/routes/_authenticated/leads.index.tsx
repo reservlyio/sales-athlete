@@ -525,6 +525,8 @@ function AnalyticsView() {
           <p className="text-xs text-muted-foreground">
             Analyzing {objectionNotes.length} notes {rangeLabel.toLowerCase()}…
           </p>
+        ) : objectionsQ.data?.error ? (
+          <p className="text-xs text-destructive">{objectionsQ.data.error}</p>
         ) : (objectionsQ.data?.objections.length ?? 0) === 0 ? (
           <p className="text-xs text-muted-foreground">No clear objections detected.</p>
         ) : (
