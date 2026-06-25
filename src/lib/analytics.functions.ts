@@ -36,6 +36,7 @@ ${data.notes.map((n, i) => `${i + 1}. ${n}`).join("\n")}`,
       const msg = e instanceof Error ? e.message : String(e);
       if (msg.includes("429")) return { objections: [], error: "AI rate limit — try again in a moment" } satisfies Result;
       if (msg.includes("402")) return { objections: [], error: "AI credits exhausted" } satisfies Result;
-      return { objections: [], error: null } satisfies Result;
+      console.error("analyzeObjections failed:", msg);
+      return { objections: [], error: `AI analysis failed: ${msg.slice(0, 200)}` } satisfies Result;
     }
   });

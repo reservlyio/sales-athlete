@@ -201,13 +201,14 @@ export function CallLogSheet({
 
           <div>
             <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
-              Quick note <Sparkles className="size-3 text-primary" />
+              Notes <Sparkles className="size-3 text-primary" />
+              <span className="text-[10px] font-normal normal-case opacity-70">— saved to this call's history</span>
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              placeholder="e.g. Follow up Tuesday, send proposal…"
+              placeholder='e.g. "Office manager said try again in 2 weeks"'
               className="w-full mt-2 bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
             />
             {parseHint && (
