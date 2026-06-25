@@ -268,6 +268,8 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
         // Each new call replaces the previous follow-up — clears if none in this note
         next_follow_up: followUp || null,
         follow_up_source: followUp ? (notes || null) : null,
+        // Keep the lead's visible Notes in sync with the latest call note
+        notes: notes || null,
       };
       if (followUp) {
         patch.deal_stage = "follow_up";

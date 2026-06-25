@@ -96,6 +96,8 @@ export function CallLogSheet({
         // Each new call replaces the previous follow-up — clears if none in this note
         next_follow_up: followUp || null,
         follow_up_source: followUp ? (notes || null) : null,
+        // Keep the lead's visible Notes in sync with the latest call note
+        notes: notes || null,
       };
       if (followUp) {
         patch.deal_stage = "follow_up";
@@ -220,6 +222,18 @@ export function CallLogSheet({
                 </button>
               </div>
             )}
+          </div>
+
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+              Follow-up date (optional)
+            </label>
+            <input
+              type="date"
+              value={followUp}
+              onChange={(e) => { setFollowUp(e.target.value); setParseHint(null); }}
+              className="w-full mt-2 bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
+            />
           </div>
         </div>
 
