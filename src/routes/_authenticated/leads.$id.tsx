@@ -174,8 +174,6 @@ function LeadDetail() {
       {/* Single combined call + notes panel */}
       <CallAndNotesPanel
         lead={lead}
-        logs={logsQ.data ?? []}
-        logsLoading={logsQ.isLoading}
         onLogged={() => {
           qc.invalidateQueries();
         }}
@@ -236,6 +234,10 @@ function LeadDetail() {
             Next follow-up: <span className="text-foreground">{fmtDate(lead.next_follow_up)}</span>
           </div>
         </div>
+      </section>
+
+      <section className="bg-card border border-border rounded-xl overflow-hidden mb-4">
+        <CallHistory logs={logsQ.data ?? []} logsLoading={logsQ.isLoading} />
       </section>
 
       <button
@@ -336,13 +338,9 @@ function CallHistory({ logs, logsLoading }: { logs: CallLog[]; logsLoading: bool
 
 function CallAndNotesPanel({
   lead,
-  logs,
-  logsLoading,
   onLogged,
 }: {
   lead: Lead;
-  logs: CallLog[];
-  logsLoading: boolean;
   onLogged: () => void;
 }) {
   const [result, setResult] = useState<string>("No Answer");
@@ -538,8 +536,6 @@ function CallAndNotesPanel({
         </button>
       </div>
 
-      {/* Call history — collapsible section, each call expandable */}
-      <CallHistory logs={logs} logsLoading={logsLoading} />
     </section>
   );
 }
