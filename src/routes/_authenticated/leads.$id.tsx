@@ -171,6 +171,12 @@ function LeadDetail() {
         )}
       </div>
 
+      {/* Last contact + next follow-up */}
+      <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground stat-num mb-4">
+        <div>Last contact: <span className="text-foreground">{fmtDate(lead.last_contact_date)}</span></div>
+        <div>Next follow-up: <span className="text-foreground">{fmtDate(lead.next_follow_up)}</span></div>
+      </div>
+
       {/* Single combined call + notes panel */}
       <CallAndNotesPanel
         lead={lead}
@@ -225,14 +231,6 @@ function LeadDetail() {
             />
             Email sent
           </label>
-        </div>
-        <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground stat-num">
-          <div>
-            Last contact: <span className="text-foreground">{fmtDate(lead.last_contact_date)}</span>
-          </div>
-          <div>
-            Next follow-up: <span className="text-foreground">{fmtDate(lead.next_follow_up)}</span>
-          </div>
         </div>
       </section>
 
@@ -509,18 +507,6 @@ function CallAndNotesPanel({
                 type="button"
                 onClick={() => setParseHint(null)}
                 className="opacity-60 hover:opacity-100"
-              >
-                <X className="size-3" />
-              </button>
-            </div>
-          )}
-          {followUp && !parseHint && (
-            <div className="mt-2 flex items-center gap-2 text-xs bg-warning/10 text-warning rounded-md px-2 py-1.5 border border-warning/30">
-              Follow-up set for <strong>{fmtDate(followUp)}</strong>
-              <button
-                type="button"
-                onClick={() => setFollowUp("")}
-                className="ml-auto opacity-60 hover:opacity-100"
               >
                 <X className="size-3" />
               </button>
