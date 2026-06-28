@@ -14,6 +14,7 @@ export type CallSheetLead = {
   contact_name: string | null;
   phone: string | null;
   deal_stage: string;
+  notes: string | null;
 };
 
 export function CallLogSheet({
@@ -33,17 +34,19 @@ export function CallLogSheet({
   const parser = useServerFn(parseFollowUpDate);
   const [parseHint, setParseHint] = useState<{ date: string; snippet: string | null } | null>(null);
 
-  // Regex first, AI fallback — only show suggestion, never auto-apply
   useEffect(() => {
     if (!notes.trim() || notes.trim().length < 3) {
       setParseHint(null);
       return;
     }
+    // 1) Regex parse first (free, instant) — surfaced as a suggestion only.
+    // Nothing is applied to followUp until the user explicitly confirms it.
     const local = parseFollowUpRegex(notes, todayISO());
     if (local.found && local.date) {
       setParseHint({ date: local.date, snippet: local.snippet });
       return;
     }
+    // 2) Debounced AI fallback for fuzzy phrasing
     const t = setTimeout(async () => {
       try {
         const out = await parser({ data: { text: notes, today: todayISO() } });
@@ -97,16 +100,19 @@ export function CallLogSheet({
         last_call_result: result,
         next_follow_up: followUp || null,
         follow_up_source: followUp ? notes || null : null,
+        // Never wipe the lead's running notes — mirror the latest non-empty call note.
+        notes: notes || lead.notes,
       };
-      if (notes) patch.notes = notes;
-      if (followUp) {
-        patch.deal_stage = "follow_up";
-      } else if (result === "Meeting Booked") {
-        patch.deal_stage = "meeting_booked";
-      } else if (result === "Objection/Not Interested") {
-        patch.deal_stage = "lost";
-      } else {
-        patch.deal_stage = "contacted";
+      // Stage always derives from the follow-up date + result, so it can never
+      // drift out of sync with what the Follow Up list actually filters on —
+      // except the terminal "client" state, which is only set manually and
+      // shouldn't get silently overwritten by a routine call.
+      if (lead.deal_stage !== "client") {
+        let deal_stage = "contacted";
+        if (followUp) deal_stage = "follow_up";
+        else if (result === "Meeting Booked") deal_stage = "meeting_booked";
+        else if (result === "Objection/Not Interested") deal_stage = "lost";
+        patch.deal_stage = deal_stage;
       }
       const { error: e2 } = await supabase
         .from("leads")
@@ -226,7 +232,10 @@ export function CallLogSheet({
 
           <div>
             <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
-              Note for this call <Sparkles className="size-3 text-primary" />
+              Notes <Sparkles className="size-3 text-primary" />
+              <span className="text-[10px] font-normal normal-case opacity-70">
+                — saved to this call's history
+              </span>
             </label>
             <textarea
               value={notes}
@@ -235,33 +244,31 @@ export function CallLogSheet({
               placeholder='e.g. "Office manager said try again in 2 weeks"'
               className="w-full mt-2 bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
             />
-            {parseHint && !followUp && (
+            {parseHint && (
               <div className="mt-2 flex items-center gap-2 text-xs bg-primary/10 text-primary rounded-md px-2 py-1.5 border border-primary/30">
-                <Sparkles className="size-3 shrink-0" />
-                <span>
-                  Detected: <strong>{fmtDate(parseHint.date)}</strong>
-                </span>
-                {parseHint.snippet && (
-                  <span className="opacity-70 truncate">· "{parseHint.snippet}"</span>
-                )}
+                <Sparkles className="size-3" />
+                Looks like <strong>{fmtDate(parseHint.date)}</strong>
                 <button
                   type="button"
-                  onClick={() => setFollowUp(parseHint.date)}
-                  className="ml-auto text-[10px] font-semibold bg-primary text-primary-foreground rounded px-1.5 py-0.5 shrink-0"
+                  onClick={() => {
+                    setFollowUp(parseHint.date);
+                    setParseHint(null);
+                  }}
+                  className="ml-auto font-semibold text-primary hover:underline"
                 >
                   Use this date
                 </button>
                 <button
                   type="button"
                   onClick={() => setParseHint(null)}
-                  className="opacity-60 hover:opacity-100 shrink-0"
+                  className="opacity-60 hover:opacity-100"
                 >
                   <X className="size-3" />
                 </button>
               </div>
             )}
-            {followUp && (
-              <div className="mt-2 flex items-center gap-1.5 text-xs bg-primary/10 text-primary rounded-md px-2 py-1.5 border border-primary/30">
+            {followUp && !parseHint && (
+              <div className="mt-2 flex items-center gap-2 text-xs bg-warning/10 text-warning rounded-md px-2 py-1.5 border border-warning/30">
                 Follow-up set for <strong>{fmtDate(followUp)}</strong>
                 <button
                   type="button"

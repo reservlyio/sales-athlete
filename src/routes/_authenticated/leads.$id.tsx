@@ -113,8 +113,6 @@ function LeadDetail() {
     );
   const lead = leadQ.data;
 
-  const isTerminal = lead.deal_stage === "client" || lead.deal_stage === "lost";
-
   return (
     <AppShell>
       <Link
@@ -176,15 +174,17 @@ function LeadDetail() {
         )}
       </div>
 
-      {/* Log call panel */}
-      <LogCallPanel
+      {/* Single combined call + notes panel */}
+      <CallAndNotesPanel
         lead={lead}
+        logs={logsQ.data ?? []}
+        logsLoading={logsQ.isLoading}
         onLogged={() => {
           qc.invalidateQueries();
         }}
       />
 
-      {/* Toggles + stage actions */}
+      {/* Toggles + stage */}
       <section className="bg-card border border-border rounded-xl p-5 mb-4 space-y-3">
         <div className="flex flex-wrap gap-3">
           <label className="flex items-center gap-2 text-sm">
@@ -196,6 +196,7 @@ function LeadDetail() {
                   updateLead.mutate({ called: true, last_contact_date: todayISO() });
                   return;
                 }
+                // Uncheck: reset call-related fields but keep email_sent intact
                 const { error: delErr } = await supabase
                   .from("call_logs")
                   .delete()
@@ -230,29 +231,36 @@ function LeadDetail() {
             Email sent
           </label>
         </div>
-        {isTerminal ? (
-          <button
-            onClick={() => updateLead.mutate({ deal_stage: "contacted" })}
-            className="text-xs text-muted-foreground underline hover:text-foreground"
+        <div>
+          <span
+            className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${STAGE_COLOR[lead.deal_stage] || ""}`}
           >
-            Reopen this lead
-          </button>
-        ) : (
-          <div className="flex gap-2">
+            {STAGE_LABEL[lead.deal_stage] ?? lead.deal_stage}
+          </span>
+          {lead.deal_stage === "client" || lead.deal_stage === "lost" ? (
             <button
-              onClick={() => updateLead.mutate({ deal_stage: "client" })}
-              className="flex-1 text-xs py-2 px-3 rounded-md border border-success text-success bg-success/10 font-semibold"
+              onClick={() => updateLead.mutate({ deal_stage: "contacted" })}
+              className="mt-2 text-xs text-primary hover:underline"
             >
-              Mark as Client (won)
+              Reopen this lead
             </button>
-            <button
-              onClick={() => updateLead.mutate({ deal_stage: "lost" })}
-              className="flex-1 text-xs py-2 px-3 rounded-md border border-destructive text-destructive bg-destructive/10 font-semibold"
-            >
-              Mark as Lost
-            </button>
-          </div>
-        )}
+          ) : (
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={() => updateLead.mutate({ deal_stage: "client" })}
+                className="text-xs text-success hover:underline"
+              >
+                Mark as Client (won)
+              </button>
+              <button
+                onClick={() => updateLead.mutate({ deal_stage: "lost" })}
+                className="text-xs text-destructive hover:underline"
+              >
+                Mark as Lost
+              </button>
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground stat-num">
           <div>
             Last contact: <span className="text-foreground">{fmtDate(lead.last_contact_date)}</span>
@@ -262,8 +270,6 @@ function LeadDetail() {
           </div>
         </div>
       </section>
-
-      <CallHistory logs={logsQ.data ?? []} logsLoading={logsQ.isLoading} />
 
       <button
         onClick={() => {
@@ -277,37 +283,53 @@ function LeadDetail() {
   );
 }
 
-function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) {
-  const [open, setOpen] = useState(false);
+function CallAndNotesPanel({
+  lead,
+  logs,
+  logsLoading,
+  onLogged,
+}: {
+  lead: Lead;
+  logs: CallLog[];
+  logsLoading: boolean;
+  onLogged: () => void;
+}) {
   const [result, setResult] = useState<string>("No Answer");
   const [objectionSource, setObjectionSource] = useState<string | null>(null);
-  const [notes, setNotes] = useState("");
-  const [followUp, setFollowUp] = useState("");
-  const [parseHint, setParseHint] = useState<{ date: string; snippet: string | null } | null>(null);
+  // This call's note only — never pre-filled from the lead's stored notes,
+  // so it's visually and functionally separate from the running record below.
+  const [callNote, setCallNote] = useState("");
+  const [followUp, setFollowUp] = useState(lead.next_follow_up ?? "");
 
   const parser = useServerFn(parseFollowUpDate);
+  const [parseHint, setParseHint] = useState<{ date: string; snippet: string | null } | null>(null);
 
-  // Regex first, AI fallback — only show suggestion, never auto-apply
   useEffect(() => {
-    if (!notes.trim() || notes.trim().length < 3) {
+    setFollowUp(lead.next_follow_up ?? "");
+  }, [lead.next_follow_up]);
+
+  // Regex first, AI fallback — only ever surfaced as a suggestion. Nothing
+  // gets applied to the follow-up date until the user clicks "Use this date".
+  useEffect(() => {
+    if (!callNote.trim() || callNote.trim().length < 3) {
       setParseHint(null);
       return;
     }
-    const local = parseFollowUpRegex(notes, todayISO());
+    const local = parseFollowUpRegex(callNote, todayISO());
     if (local.found && local.date) {
       setParseHint({ date: local.date, snippet: local.snippet });
       return;
     }
     const t = setTimeout(async () => {
       try {
-        const out = await parser({ data: { text: notes, today: todayISO() } });
+        const out = await parser({ data: { text: callNote, today: todayISO() } });
         if (out.found && out.date) setParseHint({ date: out.date, snippet: out.snippet });
       } catch (e: unknown) {
         console.warn(e);
       }
     }, 900);
     return () => clearTimeout(t);
-  }, [notes, parser]);
+  }, [callNote, parser]);
 
   const log = useMutation({
     mutationFn: async () => {
@@ -317,198 +339,184 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
         company: lead.company,
         call_date: today,
         result,
-        notes: notes || null,
+        notes: callNote || null,
         follow_up_date: followUp || null,
         objection_source: result === "Objection/Not Interested" ? objectionSource : null,
       });
       if (e1) throw e1;
-      const patch: Partial<Lead> = {
+      // Stage always derives from the follow-up date + result, so it can never
+      // drift out of sync with what the Follow Up list actually filters on —
+      // except terminal states (Client/Lost), which are set manually above and
+      // shouldn't get silently overwritten by a routine call.
+      const patch: Partial<Lead> & { deal_stage?: string } = {
         called: true,
         last_contact_date: today,
         last_call_result: result,
         next_follow_up: followUp || null,
-        follow_up_source: followUp ? notes || null : null,
+        follow_up_source: followUp ? callNote || null : null,
+        // The lead's Notes is just a mirror of the most recent call note —
+        // it's not a separate thing you edit, so it can't go out of sync.
+        notes: callNote || lead.notes,
       };
-      if (notes) patch.notes = notes;
-      if (followUp) {
-        patch.deal_stage = "follow_up";
-      } else if (result === "Meeting Booked") {
-        patch.deal_stage = "meeting_booked";
-      } else if (result === "Objection/Not Interested") {
-        patch.deal_stage = "lost";
-      } else {
-        patch.deal_stage = "contacted";
+      if (lead.deal_stage !== "client") {
+        let deal_stage = "contacted";
+        if (followUp) deal_stage = "follow_up";
+        else if (result === "Meeting Booked") deal_stage = "meeting_booked";
+        else if (result === "Objection/Not Interested") deal_stage = "lost";
+        patch.deal_stage = deal_stage;
       }
       const { error: e2 } = await supabase.from("leads").update(patch).eq("id", lead.id);
       if (e2) throw e2;
     },
     onSuccess: () => {
       toast.success("Call logged");
-      setNotes("");
-      setFollowUp("");
+      setCallNote("");
       setParseHint(null);
       setResult("No Answer");
       setObjectionSource(null);
-      setOpen(false);
       onLogged();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="w-full bg-primary text-primary-foreground rounded-xl py-3 font-semibold mb-4 flex items-center justify-center gap-2"
-      >
-        <Phone className="size-4" /> Log a call
-      </button>
-    );
-  }
-
   return (
-    <section className="bg-card border-2 border-primary rounded-xl p-5 mb-4 space-y-3">
-      <div className="flex items-center justify-between">
+    <section className="bg-card border-2 border-primary rounded-xl overflow-hidden mb-4">
+      <div className="p-5 space-y-3">
         <h3 className="font-semibold">Log call</h3>
-        <button onClick={() => setOpen(false)} className="text-muted-foreground">
-          <X className="size-4" />
+        <div>
+          <label className="text-xs text-muted-foreground">Result</label>
+          <div className="grid grid-cols-2 gap-1.5 mt-1">
+            {CALL_RESULTS.map((r, i) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => {
+                  setResult(r);
+                  if (r !== "Objection/Not Interested") setObjectionSource(null);
+                }}
+                className={`text-xs py-2 px-2 rounded-md border ${
+                  i === CALL_RESULTS.length - 1 && CALL_RESULTS.length % 2 === 1
+                    ? "col-span-2 mx-auto w-1/2"
+                    : ""
+                } ${
+                  result === r
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-input border-border"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+          {result === "Objection/Not Interested" && (
+            <div className="mt-1.5">
+              <label className="text-xs text-muted-foreground">Came from</label>
+              <div className="grid grid-cols-2 gap-1.5 mt-1">
+                {OBJECTION_SOURCES.map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() => setObjectionSource(s.value)}
+                    className={`text-xs py-2 px-2 rounded-md border ${
+                      objectionSource === s.value
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-input border-border"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground flex items-center gap-1">
+            Note for this call <Sparkles className="size-3 text-primary" />
+          </label>
+          <textarea
+            value={callNote}
+            onChange={(e) => setCallNote(e.target.value)}
+            rows={3}
+            placeholder='e.g. "Office manager said try again in 2 weeks"'
+            className="w-full mt-1 bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
+          />
+          {parseHint && (
+            <div className="mt-2 flex items-center gap-2 text-xs bg-primary/10 text-primary rounded-md px-2 py-1.5 border border-primary/30">
+              <Sparkles className="size-3" />
+              Looks like <strong>{fmtDate(parseHint.date)}</strong>
+              {parseHint.snippet && <span className="opacity-70">· "{parseHint.snippet}"</span>}
+              <button
+                type="button"
+                onClick={() => {
+                  setFollowUp(parseHint.date);
+                  setParseHint(null);
+                }}
+                className="ml-auto font-semibold text-primary hover:underline"
+              >
+                Use this date
+              </button>
+              <button
+                type="button"
+                onClick={() => setParseHint(null)}
+                className="opacity-60 hover:opacity-100"
+              >
+                <X className="size-3" />
+              </button>
+            </div>
+          )}
+          {followUp && !parseHint && (
+            <div className="mt-2 flex items-center gap-2 text-xs bg-warning/10 text-warning rounded-md px-2 py-1.5 border border-warning/30">
+              Follow-up set for <strong>{fmtDate(followUp)}</strong>
+              <button
+                type="button"
+                onClick={() => setFollowUp("")}
+                className="ml-auto opacity-60 hover:opacity-100"
+              >
+                <X className="size-3" />
+              </button>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => log.mutate()}
+          disabled={log.isPending || (result === "Objection/Not Interested" && !objectionSource)}
+          className="w-full bg-primary text-primary-foreground rounded-md py-2.5 font-semibold disabled:opacity-50"
+        >
+          {log.isPending ? "Saving…" : "Save call"}
         </button>
       </div>
-      <div>
-        <label className="text-xs text-muted-foreground">Result</label>
-        <div className="grid grid-cols-2 gap-1.5 mt-1">
-          {CALL_RESULTS.map((r, i) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => {
-                setResult(r);
-                if (r !== "Objection/Not Interested") setObjectionSource(null);
-              }}
-              className={`text-xs py-2 px-2 rounded-md border ${
-                i === CALL_RESULTS.length - 1 && CALL_RESULTS.length % 2 === 1
-                  ? "col-span-2 mx-auto w-1/2"
-                  : ""
-              } ${
-                result === r
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-input border-border"
-              }`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-        {result === "Objection/Not Interested" && (
-          <div className="mt-1.5">
-            <label className="text-xs text-muted-foreground">Came from</label>
-            <div className="grid grid-cols-2 gap-1.5 mt-1">
-              {OBJECTION_SOURCES.map((s) => (
-                <button
-                  key={s.value}
-                  type="button"
-                  onClick={() => setObjectionSource(s.value)}
-                  className={`text-xs py-2 px-2 rounded-md border ${
-                    objectionSource === s.value
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-input border-border"
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-      <div>
-        <label className="text-xs text-muted-foreground flex items-center gap-1">
-          Note for this call <Sparkles className="size-3 text-primary" />
-        </label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-          placeholder='e.g. "Office manager said try again in 2 weeks"'
-          className="w-full mt-1 bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
-        />
-        {parseHint && !followUp && (
-          <div className="mt-2 flex items-center gap-2 text-xs bg-primary/10 text-primary rounded-md px-2 py-1.5 border border-primary/30">
-            <Sparkles className="size-3 shrink-0" />
-            <span>
-              Detected: <strong>{fmtDate(parseHint.date)}</strong>
-            </span>
-            {parseHint.snippet && (
-              <span className="opacity-70 truncate">· "{parseHint.snippet}"</span>
-            )}
-            <button
-              type="button"
-              onClick={() => setFollowUp(parseHint.date)}
-              className="ml-auto text-[10px] font-semibold bg-primary text-primary-foreground rounded px-1.5 py-0.5 shrink-0"
-            >
-              Use this date
-            </button>
-            <button
-              type="button"
-              onClick={() => setParseHint(null)}
-              className="opacity-60 hover:opacity-100 shrink-0"
-            >
-              <X className="size-3" />
-            </button>
-          </div>
-        )}
-        {followUp && (
-          <div className="mt-2 flex items-center gap-1.5 text-xs bg-primary/10 text-primary rounded-md px-2 py-1.5 border border-primary/30">
-            Follow-up set for <strong>{fmtDate(followUp)}</strong>
-            <button
-              type="button"
-              onClick={() => setFollowUp("")}
-              className="ml-auto opacity-60 hover:opacity-100"
-            >
-              <X className="size-3" />
-            </button>
-          </div>
-        )}
-      </div>
-      <button
-        onClick={() => log.mutate()}
-        disabled={log.isPending || (result === "Objection/Not Interested" && !objectionSource)}
-        className="w-full bg-primary text-primary-foreground rounded-md py-2.5 font-semibold disabled:opacity-50"
-      >
-        {log.isPending ? "Saving…" : "Save call"}
-      </button>
-    </section>
-  );
-}
 
-function CallHistory({ logs, logsLoading }: { logs: CallLog[]; logsLoading: boolean }) {
-  return (
-    <section className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="px-5 py-2.5 border-b border-border font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">
-        Call history
+      {/* Past calls, right below the note — one place for everything */}
+      <div className="border-t border-border">
+        <div className="px-5 py-2.5 border-b border-border font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">
+          Call history
+        </div>
+        {logsLoading ? (
+          <div className="p-5 text-sm text-muted-foreground">Loading…</div>
+        ) : logs.length === 0 ? (
+          <div className="p-5 text-sm text-muted-foreground">No calls logged yet.</div>
+        ) : (
+          <ul className="divide-y divide-border text-sm">
+            {logs.map((c) => (
+              <li key={c.id} className="px-5 py-3">
+                <div className="flex justify-between">
+                  <span className="font-medium">{c.result}</span>
+                  <span className="stat-num text-xs text-muted-foreground">
+                    {fmtDate(c.call_date)}
+                  </span>
+                </div>
+                {c.notes && <p className="text-xs text-muted-foreground mt-1">{c.notes}</p>}
+                {c.follow_up_date && (
+                  <p className="text-xs text-warning mt-1">
+                    Follow up: {fmtDate(c.follow_up_date)}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-      {logsLoading ? (
-        <div className="p-5 text-sm text-muted-foreground">Loading…</div>
-      ) : logs.length === 0 ? (
-        <div className="p-5 text-sm text-muted-foreground">No calls logged yet.</div>
-      ) : (
-        <ul className="divide-y divide-border text-sm">
-          {logs.map((c) => (
-            <li key={c.id} className="px-5 py-3">
-              <div className="flex justify-between">
-                <span className="font-medium">{c.result}</span>
-                <span className="stat-num text-xs text-muted-foreground">
-                  {fmtDate(c.call_date)}
-                </span>
-              </div>
-              {c.notes && <p className="text-xs text-muted-foreground mt-1">{c.notes}</p>}
-              {c.follow_up_date && (
-                <p className="text-xs text-warning mt-1">Follow up: {fmtDate(c.follow_up_date)}</p>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
     </section>
   );
 }
