@@ -125,11 +125,7 @@ function LeadDetail() {
 
       <header className="mb-5">
         <div className="flex items-center gap-2 mb-1">
-          <span
-            className={`text-[11px] font-medium px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 ${STAGE_COLOR[lead.deal_stage] || ""}`}
-          >
-            {STAGE_LABEL[lead.deal_stage] ?? lead.deal_stage}
-          </span>
+          <StagePicker current={lead.deal_stage} onSelect={(s) => updateLead.mutate({ deal_stage: s })} />
         </div>
         <h1 className="text-2xl md:text-3xl font-bold">{lead.company}</h1>
         {lead.contact_name && (
@@ -232,7 +228,6 @@ function LeadDetail() {
             Email sent
           </label>
         </div>
-        <StagePicker current={lead.deal_stage} onSelect={(s) => updateLead.mutate({ deal_stage: s })} />
         <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground stat-num">
           <div>
             Last contact: <span className="text-foreground">{fmtDate(lead.last_contact_date)}</span>
