@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -16,20 +16,23 @@ export const analyzeObjections = createServerFn({ method: "POST" })
     const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
     const gateway = createLovableAiGatewayProvider(key);
 
+    const schema = z.object({
+      objections: z.array(z.object({ label: z.string(), count: z.number() })).max(8),
+    });
     try {
-      const { object } = await generateObject({
+      const { text } = await generateText({
         model: gateway("google/gemini-3-flash-preview"),
-        schema: z.object({
-          objections: z
-            .array(z.object({ label: z.string(), count: z.number() }))
-            .max(8),
-        }),
         prompt: `You are a sales coach. Below are recent call notes from cold outreach. Identify the TOP recurring objections / reasons leads pushed back. Cluster similar wording into one label (e.g. "Already using competitor", "Too expensive", "Decision maker unavailable", "Not interested right now", "Bad timing"). Return up to 8, sorted by count descending. Count = how many distinct notes mention that objection.
 
 Notes:
-${data.notes.map((n, i) => `${i + 1}. ${n}`).join("\n")}`,
+${data.notes.map((n, i) => `${i + 1}. ${n}`).join("\n")}
+
+Respond with ONLY a JSON object — no markdown, no explanation:
+{"objections":[{"label":"...","count":N}]}`,
       });
-      return { ...object, error: null } satisfies Result;
+      const json = text.trim().replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+      const parsed = schema.parse(JSON.parse(json));
+      return { ...parsed, error: null } satisfies Result;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       if (msg.includes("429")) return { objections: [], error: "AI rate limit — try again in a moment" } satisfies Result;
