@@ -22,9 +22,9 @@ export const analyzeObjections = createServerFn({ method: "POST" })
     try {
       const { text } = await generateText({
         model: gateway("google/gemini-3-flash-preview"),
-        prompt: `You are a sales coach. Below are recent call notes from cold outreach. Identify the TOP recurring objections / reasons leads pushed back. Cluster similar wording into one label (e.g. "Already using competitor", "Too expensive", "Decision maker unavailable", "Not interested right now", "Bad timing"). Return up to 8, sorted by count descending. Count = how many distinct notes mention that objection.
+        prompt: `You are a sales coach analyzing cold-call outcomes. Each line below is one call entry, formatted as "Result (source if any) note text". Identify the TOP recurring reasons leads didn't move forward — cluster similar entries into one label (e.g. "Gatekeeper blocked", "Decision maker not interested", "Already using competitor", "Bad timing", "No answer/voicemail"). Return up to 8, sorted by count descending. Count = how many distinct entries fall into that cluster. Include "No Answer / Voicemail" as a cluster if those dominate.
 
-Notes:
+Calls:
 ${data.notes.map((n, i) => `${i + 1}. ${n}`).join("\n")}
 
 Respond with ONLY a JSON object — no markdown, no explanation:

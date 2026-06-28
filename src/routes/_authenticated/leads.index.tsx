@@ -371,7 +371,7 @@ function AnalyticsView() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("call_logs")
-        .select("id,call_date,result,notes")
+        .select("id,call_date,result,objection_source,notes")
         .gte("call_date", start)
         .order("call_date", { ascending: true });
       if (error) throw error;
@@ -393,7 +393,14 @@ function AnalyticsView() {
   });
 
   const objectionNotes = useMemo(() => {
-    const callNotes = (callsQ.data ?? []).map((c) => c.notes).filter((n): n is string => !!n && n.trim().length > 3);
+    // Build a rich string per call: result + source + note so the AI has
+    // something to cluster even when no free-text note was written.
+    const callNotes = (callsQ.data ?? []).map((c) => {
+      const parts: string[] = [c.result as string];
+      if (c.objection_source) parts.push(`(${c.objection_source})`);
+      if (c.notes && (c.notes as string).trim().length > 0) parts.push(c.notes as string);
+      return parts.join(" ");
+    });
     const generalNotes = (leadNotesQ.data ?? []).filter((n) => n.trim().length > 3);
     return Array.from(new Set([...callNotes, ...generalNotes]));
   }, [callsQ.data, leadNotesQ.data]);
