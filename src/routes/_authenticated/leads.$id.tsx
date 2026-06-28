@@ -125,7 +125,7 @@ function LeadDetail() {
       <header className="mb-5">
         <div className="flex items-center gap-2 mb-1">
           <span
-            className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${STAGE_COLOR[lead.deal_stage] || ""}`}
+            className={`text-[11px] font-medium px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 ${STAGE_COLOR[lead.deal_stage] || ""}`}
           >
             {STAGE_LABEL[lead.deal_stage] ?? lead.deal_stage}
           </span>
@@ -233,7 +233,7 @@ function LeadDetail() {
         </div>
         <div>
           <span
-            className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${STAGE_COLOR[lead.deal_stage] || ""}`}
+            className={`text-[11px] font-medium px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 ${STAGE_COLOR[lead.deal_stage] || ""}`}
           >
             {STAGE_LABEL[lead.deal_stage] ?? lead.deal_stage}
           </span>
