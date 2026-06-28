@@ -282,6 +282,58 @@ function StagePicker({ current, onSelect }: { current: string; onSelect: (s: str
   );
 }
 
+function CallHistory({ logs, logsLoading }: { logs: CallLog[]; logsLoading: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  return (
+    <div className="border-t border-border">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-5 py-3 text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hover:text-foreground transition-colors"
+      >
+        Call history {!logsLoading && logs.length > 0 && `(${logs.length})`}
+        <ChevronDown className={`size-4 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        logsLoading ? (
+          <div className="px-5 pb-4 text-sm text-muted-foreground">Loading…</div>
+        ) : logs.length === 0 ? (
+          <div className="px-5 pb-4 text-sm text-muted-foreground">No calls logged yet.</div>
+        ) : (
+          <ul className="divide-y divide-border text-sm">
+            {logs.map((c) => {
+              const hasDetail = !!(c.notes || c.follow_up_date);
+              const isExpanded = expandedId === c.id;
+              return (
+                <li key={c.id}>
+                  <button
+                    onClick={() => hasDetail && setExpandedId(isExpanded ? null : c.id)}
+                    className={`w-full flex items-center justify-between px-5 py-3 text-left ${hasDetail ? "hover:bg-muted/30 cursor-pointer" : "cursor-default"}`}
+                  >
+                    <span className="font-medium">{c.result}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="stat-num text-xs text-muted-foreground">{fmtDate(c.call_date)}</span>
+                      {hasDetail && (
+                        <ChevronDown className={`size-3.5 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                      )}
+                    </div>
+                  </button>
+                  {isExpanded && (
+                    <div className="px-5 pb-3 space-y-1">
+                      {c.notes && <p className="text-xs text-muted-foreground">{c.notes}</p>}
+                      {c.follow_up_date && <p className="text-xs text-warning">Follow up: {fmtDate(c.follow_up_date)}</p>}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )
+      )}
+    </div>
+  );
+}
+
 function CallAndNotesPanel({
   lead,
   logs,
@@ -486,36 +538,8 @@ function CallAndNotesPanel({
         </button>
       </div>
 
-      {/* Past calls, right below the note — one place for everything */}
-      <div className="border-t border-border">
-        <div className="px-5 py-2.5 border-b border-border font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">
-          Call history
-        </div>
-        {logsLoading ? (
-          <div className="p-5 text-sm text-muted-foreground">Loading…</div>
-        ) : logs.length === 0 ? (
-          <div className="p-5 text-sm text-muted-foreground">No calls logged yet.</div>
-        ) : (
-          <ul className="divide-y divide-border text-sm">
-            {logs.map((c) => (
-              <li key={c.id} className="px-5 py-3">
-                <div className="flex justify-between">
-                  <span className="font-medium">{c.result}</span>
-                  <span className="stat-num text-xs text-muted-foreground">
-                    {fmtDate(c.call_date)}
-                  </span>
-                </div>
-                {c.notes && <p className="text-xs text-muted-foreground mt-1">{c.notes}</p>}
-                {c.follow_up_date && (
-                  <p className="text-xs text-warning mt-1">
-                    Follow up: {fmtDate(c.follow_up_date)}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {/* Call history — collapsible section, each call expandable */}
+      <CallHistory logs={logs} logsLoading={logsLoading} />
     </section>
   );
 }
