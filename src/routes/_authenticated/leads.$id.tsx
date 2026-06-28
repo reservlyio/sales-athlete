@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import {
   CALL_RESULTS,
   OBJECTION_SOURCES,
+  DEAL_STAGES,
   STAGE_COLOR,
   STAGE_LABEL,
   todayISO,
@@ -15,7 +16,7 @@ import {
 import { parseFollowUpDate } from "@/lib/ai.functions";
 import { parseFollowUpRegex } from "@/lib/follow-up-parser";
 import { toast } from "sonner";
-import { ArrowLeft, Phone, Mail, Globe, MapPin, Sparkles, X, Trash2 } from "lucide-react";
+import { ArrowLeft, Phone, Mail, Globe, MapPin, Sparkles, X, Trash2, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/leads/$id")({
   head: () => ({ meta: [{ title: "Lead" }] }),
@@ -231,36 +232,7 @@ function LeadDetail() {
             Email sent
           </label>
         </div>
-        <div>
-          <span
-            className={`text-[11px] font-medium px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 ${STAGE_COLOR[lead.deal_stage] || ""}`}
-          >
-            {STAGE_LABEL[lead.deal_stage] ?? lead.deal_stage}
-          </span>
-          {lead.deal_stage === "client" || lead.deal_stage === "lost" ? (
-            <button
-              onClick={() => updateLead.mutate({ deal_stage: "contacted" })}
-              className="mt-2 text-xs text-primary hover:underline"
-            >
-              Reopen this lead
-            </button>
-          ) : (
-            <div className="flex gap-3 mt-2">
-              <button
-                onClick={() => updateLead.mutate({ deal_stage: "client" })}
-                className="text-xs text-success hover:underline"
-              >
-                Mark as Client (won)
-              </button>
-              <button
-                onClick={() => updateLead.mutate({ deal_stage: "lost" })}
-                className="text-xs text-destructive hover:underline"
-              >
-                Mark as Lost
-              </button>
-            </div>
-          )}
-        </div>
+        <StagePicker current={lead.deal_stage} onSelect={(s) => updateLead.mutate({ deal_stage: s })} />
         <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground stat-num">
           <div>
             Last contact: <span className="text-foreground">{fmtDate(lead.last_contact_date)}</span>
@@ -280,6 +252,38 @@ function LeadDetail() {
         <Trash2 className="size-3" /> Delete lead
       </button>
     </AppShell>
+  );
+}
+
+function StagePicker({ current, onSelect }: { current: string; onSelect: (s: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative inline-block">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`text-[11px] font-medium px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 ${STAGE_COLOR[current] || ""}`}
+      >
+        {STAGE_LABEL[current] ?? current}
+        <ChevronDown className="size-3 opacity-70" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full mt-1 z-20 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[170px]">
+            {DEAL_STAGES.map((s) => (
+              <button
+                key={s.value}
+                onClick={() => { onSelect(s.value); setOpen(false); }}
+                className={`w-full text-left px-3 py-1.5 text-xs hover:bg-muted flex items-center gap-2 ${current === s.value ? "font-semibold" : ""}`}
+              >
+                <span className={`size-2 rounded-full shrink-0 ${STAGE_COLOR[s.value]?.split(" ")[0] ?? "bg-muted"}`} />
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
