@@ -171,12 +171,6 @@ function LeadDetail() {
         )}
       </div>
 
-      {/* Last contact + next follow-up */}
-      <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground stat-num mb-4">
-        <div>Last contact: <span className="text-foreground">{fmtDate(lead.last_contact_date)}</span></div>
-        <div>Next follow-up: <span className="text-foreground">{fmtDate(lead.next_follow_up)}</span></div>
-      </div>
-
       {/* Single combined call + notes panel */}
       <CallAndNotesPanel
         lead={lead}
@@ -520,6 +514,10 @@ function CallAndNotesPanel({
         >
           {log.isPending ? "Saving…" : "Save call"}
         </button>
+        <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground stat-num pt-1">
+          <div>Last contact: <span className="text-foreground">{fmtDate(lead.last_contact_date)}</span></div>
+          <div>Next follow-up: <span className="text-foreground">{fmtDate(lead.next_follow_up)}</span></div>
+        </div>
       </div>
 
     </section>
