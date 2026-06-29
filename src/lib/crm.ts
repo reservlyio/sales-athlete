@@ -25,12 +25,12 @@ export const STAGE_LABEL: Record<string, string> = Object.fromEntries(
 );
 
 export const STAGE_COLOR: Record<string, string> = {
-  new_lead: "bg-gray-500/10 text-gray-600 dark:text-gray-400",
-  contacted: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
-  follow_up: "bg-orange-500/10 text-orange-700 dark:text-orange-400",
-  meeting_booked: "bg-purple-500/10 text-purple-700 dark:text-purple-400",
-  client: "bg-green-500/10 text-green-700 dark:text-green-400",
-  lost: "bg-red-500/10 text-red-600 dark:text-red-400",
+  new_lead: "bg-transparent text-slate-500 dark:text-slate-400",
+  contacted: "bg-sky-400/[.08] text-sky-600 dark:text-sky-400",
+  follow_up: "bg-yellow-400/[.12] text-yellow-600 dark:text-yellow-400",
+  meeting_booked: "bg-violet-400/[.08] text-violet-600 dark:text-violet-400",
+  client: "bg-emerald-400/[.08] text-emerald-600 dark:text-emerald-400",
+  lost: "bg-rose-400/[.08] text-rose-500 dark:text-rose-400",
 };
 
 export function todayISO() {
