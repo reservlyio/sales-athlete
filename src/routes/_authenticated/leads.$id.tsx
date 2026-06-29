@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
@@ -289,12 +289,18 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="w-full bg-primary text-primary-foreground rounded-xl py-3 font-semibold mb-4 flex items-center justify-center gap-2"
-      >
-        <Phone className="size-4" /> Log a call
-      </button>
+      <div className="mb-4">
+        <button
+          onClick={() => setOpen(true)}
+          className="w-full bg-primary text-primary-foreground rounded-xl py-3 font-semibold flex items-center justify-center gap-2"
+        >
+          <Phone className="size-4" /> Log a call
+        </button>
+        <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground stat-num mt-2 px-1">
+          <div>Last contact: <span className="text-foreground">{fmtDate(lead.last_contact_date)}</span></div>
+          <div>Next follow-up: <span className="text-foreground">{fmtDate(lead.next_follow_up)}</span></div>
+        </div>
+      </div>
     );
   }
 
@@ -401,8 +407,16 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
 
 function StageChip({ stage, onChange }: { stage: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
   return (
-    <div className="inline-flex flex-col items-start gap-1.5">
+    <div ref={ref} className="relative inline-block">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -412,13 +426,13 @@ function StageChip({ stage, onChange }: { stage: string; onChange: (v: string) =
         {STAGE_LABEL[stage] ?? stage}
       </button>
       {open && (
-        <div className="flex flex-col gap-1 pt-0.5">
+        <div className="absolute left-0 top-full mt-1.5 z-50 bg-card border border-border/60 rounded-xl shadow-lg p-1.5 flex flex-col gap-0.5 min-w-[160px]">
           {DEAL_STAGES.map((s) => (
             <button
               key={s.value}
               type="button"
               onClick={() => { onChange(s.value); setOpen(false); }}
-              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${STAGE_COLOR[s.value] ?? "bg-gray-500/15 text-gray-400"} ${stage === s.value ? "ring-1 ring-inset ring-current/50" : "opacity-70 hover:opacity-100"}`}
+              className={`w-full inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-full transition-colors ${STAGE_COLOR[s.value] ?? "bg-gray-500/15 text-gray-400"} ${stage === s.value ? "ring-1 ring-inset ring-current/50" : "opacity-60 hover:opacity-100"}`}
             >
               <span className="size-1.5 rounded-full bg-current shrink-0" />
               {s.label}
