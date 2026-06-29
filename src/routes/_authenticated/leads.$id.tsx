@@ -289,18 +289,12 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
 
   if (!open) {
     return (
-      <div className="mb-4">
-        <button
-          onClick={() => setOpen(true)}
-          className="w-full bg-primary text-primary-foreground rounded-xl py-3 font-semibold flex items-center justify-center gap-2"
-        >
-          <Phone className="size-4" /> Log a call
-        </button>
-        <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground stat-num mt-2 px-1">
-          <div>Last contact: <span className="text-foreground">{fmtDate(lead.last_contact_date)}</span></div>
-          <div>Next follow-up: <span className="text-foreground">{fmtDate(lead.next_follow_up)}</span></div>
-        </div>
-      </div>
+      <button
+        onClick={() => setOpen(true)}
+        className="w-full bg-primary text-primary-foreground rounded-xl py-3 font-semibold mb-4 flex items-center justify-center gap-2"
+      >
+        <Phone className="size-4" /> Log a call
+      </button>
     );
   }
 
