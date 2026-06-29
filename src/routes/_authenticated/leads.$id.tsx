@@ -97,7 +97,7 @@ function LeadDetail() {
       </Link>
 
       <header className="mb-5">
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-3">
           <StageChip stage={lead.deal_stage} onChange={(v) => updateLead.mutate({ deal_stage: v })} />
         </div>
         <h1 className="text-2xl md:text-3xl font-bold">{lead.company}</h1>
@@ -426,7 +426,7 @@ function StageChip({ stage, onChange }: { stage: string; onChange: (v: string) =
         {STAGE_LABEL[stage] ?? stage}
       </button>
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 bg-popover border border-border rounded-xl shadow-xl p-2 flex flex-col gap-1 min-w-[160px]">
+        <div className="absolute left-0 top-full mt-1.5 z-50 bg-transparent border border-border/40 rounded-xl shadow-sm backdrop-blur-sm p-2 flex flex-col gap-1 min-w-[160px]">
           {DEAL_STAGES.map((s) => (
             <button
               key={s.value}

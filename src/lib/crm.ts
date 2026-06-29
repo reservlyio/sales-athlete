@@ -25,7 +25,7 @@ export const STAGE_LABEL: Record<string, string> = Object.fromEntries(
 );
 
 export const STAGE_COLOR: Record<string, string> = {
-  new_lead: "bg-transparent text-slate-500 dark:text-slate-400",
+  new_lead: "bg-gray-400/[.08] text-slate-500 dark:text-slate-400",
   contacted: "bg-sky-400/[.08] text-sky-600 dark:text-sky-400",
   follow_up: "bg-yellow-400/[.12] text-yellow-600 dark:text-yellow-400",
   meeting_booked: "bg-violet-400/[.08] text-violet-600 dark:text-violet-400",
