@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
@@ -401,34 +401,26 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
 
 function StageChip({ stage, onChange }: { stage: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
   return (
-    <div ref={ref} className="relative inline-block">
+    <div className="inline-flex flex-col items-start gap-1.5">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${STAGE_COLOR[stage] ?? "bg-gray-500/10 text-gray-600"}`}
+        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${STAGE_COLOR[stage] ?? "bg-gray-500/15 text-gray-400"}`}
       >
-        <span className="size-1.5 rounded-full bg-current opacity-70 shrink-0" />
+        <span className="size-1.5 rounded-full bg-current shrink-0" />
         {STAGE_LABEL[stage] ?? stage}
       </button>
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 bg-transparent border border-border/40 rounded-xl shadow-sm backdrop-blur-sm p-2 flex flex-col gap-1 min-w-[160px]">
+        <div className="flex flex-wrap gap-1.5 pt-0.5">
           {DEAL_STAGES.map((s) => (
             <button
               key={s.value}
               type="button"
               onClick={() => { onChange(s.value); setOpen(false); }}
-              className={`w-full text-left inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-full transition-colors ${STAGE_COLOR[s.value] ?? "bg-gray-500/10 text-gray-600"} ${stage === s.value ? "ring-1 ring-inset ring-current" : ""}`}
+              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${STAGE_COLOR[s.value] ?? "bg-gray-500/15 text-gray-400"} ${stage === s.value ? "ring-1 ring-inset ring-current/50" : "opacity-70 hover:opacity-100"}`}
             >
-              <span className="size-1.5 rounded-full bg-current opacity-70 shrink-0" />
+              <span className="size-1.5 rounded-full bg-current shrink-0" />
               {s.label}
             </button>
           ))}
