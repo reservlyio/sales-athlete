@@ -412,7 +412,7 @@ function StageChip({ stage, onChange }: { stage: string; onChange: (v: string) =
         {STAGE_LABEL[stage] ?? stage}
       </button>
       {open && (
-        <div className="flex flex-wrap gap-1.5 pt-0.5">
+        <div className="flex flex-col gap-1 pt-0.5">
           {DEAL_STAGES.map((s) => (
             <button
               key={s.value}
