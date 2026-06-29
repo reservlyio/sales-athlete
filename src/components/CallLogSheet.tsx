@@ -14,7 +14,6 @@ export type CallSheetLead = {
   contact_name: string | null;
   phone: string | null;
   deal_stage: string;
-  notes: string | null;
 };
 
 export function CallLogSheet({
@@ -35,33 +34,29 @@ export function CallLogSheet({
   const [parseHint, setParseHint] = useState<{ date: string; snippet: string | null } | null>(null);
 
   useEffect(() => {
-    if (!notes.trim() || notes.trim().length < 3) {
-      setParseHint(null);
-      return;
-    }
-    // 1) Regex parse first (free, instant) — surfaced as a suggestion only.
-    // Nothing is applied to followUp until the user explicitly confirms it.
+    if (!notes.trim() || notes.trim().length < 3) { setParseHint(null); return; }
+    // 1) Regex parse first (free, instant)
     const local = parseFollowUpRegex(notes, todayISO());
     if (local.found && local.date) {
       setParseHint({ date: local.date, snippet: local.snippet });
+      setFollowUp(local.date);
       return;
     }
     // 2) Debounced AI fallback for fuzzy phrasing
     const t = setTimeout(async () => {
       try {
         const out = await parser({ data: { text: notes, today: todayISO() } });
-        if (out.found && out.date) setParseHint({ date: out.date, snippet: out.snippet });
-      } catch (e: unknown) {
-        console.warn(e);
-      }
+        if (out.found && out.date) {
+          setParseHint({ date: out.date, snippet: out.snippet });
+          setFollowUp(out.date);
+        }
+      } catch (e: unknown) { console.warn(e); }
     }, 900);
     return () => clearTimeout(t);
   }, [notes, parser]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
@@ -98,26 +93,18 @@ export function CallLogSheet({
         called: true,
         last_contact_date: today,
         last_call_result: result,
+        // Each new call replaces the previous follow-up — clears if none in this note
         next_follow_up: followUp || null,
-        follow_up_source: followUp ? notes || null : null,
-        // Never wipe the lead's running notes — mirror the latest non-empty call note.
-        notes: notes || lead.notes,
+        follow_up_source: followUp ? (notes || null) : null,
       };
-      // Stage always derives from the follow-up date + result, so it can never
-      // drift out of sync with what the Follow Up list actually filters on —
-      // except the terminal "client" state, which is only set manually and
-      // shouldn't get silently overwritten by a routine call.
-      if (lead.deal_stage !== "client") {
-        let deal_stage = "contacted";
-        if (followUp) deal_stage = "follow_up";
-        else if (result === "Meeting Booked") deal_stage = "meeting_booked";
-        else if (result === "Objection/Not Interested") deal_stage = "lost";
-        patch.deal_stage = deal_stage;
+      if (followUp) {
+        patch.deal_stage = "follow_up";
+      } else if (result === "Meeting Booked") {
+        patch.deal_stage = "meeting_booked";
+      } else if (result === "Objection/Not Interested") {
+        patch.deal_stage = "lost";
       }
-      const { error: e2 } = await supabase
-        .from("leads")
-        .update(patch as never)
-        .eq("id", lead.id);
+      const { error: e2 } = await supabase.from("leads").update(patch as never).eq("id", lead.id);
       if (e2) throw e2;
     },
     onSuccess: () => {
@@ -129,19 +116,14 @@ export function CallLogSheet({
   });
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full md:max-w-md bg-card border-t md:border border-border md:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col max-h-[92vh]"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-          <button onClick={onClose} className="text-sm text-primary font-medium">
-            Cancel
-          </button>
+          <button onClick={onClose} className="text-sm text-primary font-medium">Cancel</button>
           <div className="text-xs text-muted-foreground">Log call</div>
           <div className="w-12" />
         </div>
@@ -149,9 +131,7 @@ export function CallLogSheet({
         {/* Lead summary + tap-to-copy phone */}
         <div className="px-5 pt-4 pb-2 text-center">
           <h2 className="text-xl font-bold">{lead.company}</h2>
-          {lead.contact_name && (
-            <p className="text-sm text-muted-foreground mt-0.5">{lead.contact_name}</p>
-          )}
+          {lead.contact_name && <p className="text-sm text-muted-foreground mt-0.5">{lead.contact_name}</p>}
           {lead.phone && (
             <div className="mt-3 flex flex-col items-center gap-2">
               <button
@@ -160,11 +140,7 @@ export function CallLogSheet({
                 title="Tap to copy"
               >
                 {lead.phone}
-                {copied ? (
-                  <Check className="size-4 text-success" />
-                ) : (
-                  <Copy className="size-4 text-muted-foreground" />
-                )}
+                {copied ? <Check className="size-4 text-success" /> : <Copy className="size-4 text-muted-foreground" />}
               </button>
               <a
                 href={`tel:${lead.phone}`}
@@ -179,23 +155,15 @@ export function CallLogSheet({
         {/* Scrollable body */}
         <div className="px-5 py-3 overflow-y-auto flex-1 space-y-4">
           <div>
-            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-              Call result
-            </label>
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {CALL_RESULTS.map((r, i) => (
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Call result</label>
+            <div className="mt-2 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+              {CALL_RESULTS.slice(0, -1).map((r) => (
                 <button
                   key={r}
                   type="button"
-                  onClick={() => {
-                    setResult(r);
-                    if (r !== "Objection/Not Interested") setObjectionSource(null);
-                  }}
-                  className={`text-xs py-2.5 px-2 rounded-lg border font-medium transition-colors ${
-                    i === CALL_RESULTS.length - 1 && CALL_RESULTS.length % 2 === 1
-                      ? "col-span-2 mx-auto w-1/2"
-                      : ""
-                  } ${
+                  onClick={() => { setResult(r); if (r !== "Objection/Not Interested") setObjectionSource(null); }}
+                  className={`text-xs py-3 px-2 rounded-lg border font-medium transition-colors leading-tight ${
                     result === r
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-muted/30 border-border text-foreground hover:border-primary/50"
@@ -204,6 +172,18 @@ export function CallLogSheet({
                   {r}
                 </button>
               ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setResult("Meeting Booked")}
+                className={`w-full text-sm py-3 px-4 rounded-lg border font-semibold transition-colors ${
+                  result === "Meeting Booked"
+                    ? "bg-success text-white border-success"
+                    : "bg-success/10 border-success/40 text-success hover:bg-success/20 hover:border-success/60"
+                }`}
+              >
+                Meeting Booked
+              </button>
             </div>
             {result === "Objection/Not Interested" && (
               <div className="mt-2">
@@ -232,49 +212,20 @@ export function CallLogSheet({
 
           <div>
             <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
-              Notes <Sparkles className="size-3 text-primary" />
-              <span className="text-[10px] font-normal normal-case opacity-70">
-                — saved to this call's history
-              </span>
+              Quick note <Sparkles className="size-3 text-primary" />
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              placeholder='e.g. "Office manager said try again in 2 weeks"'
+              placeholder="e.g. Follow up Tuesday, send proposal…"
               className="w-full mt-2 bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
             />
             {parseHint && (
               <div className="mt-2 flex items-center gap-2 text-xs bg-primary/10 text-primary rounded-md px-2 py-1.5 border border-primary/30">
                 <Sparkles className="size-3" />
-                Looks like <strong>{fmtDate(parseHint.date)}</strong>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFollowUp(parseHint.date);
-                    setParseHint(null);
-                  }}
-                  className="ml-auto font-semibold text-primary hover:underline"
-                >
-                  Use this date
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setParseHint(null)}
-                  className="opacity-60 hover:opacity-100"
-                >
-                  <X className="size-3" />
-                </button>
-              </div>
-            )}
-            {followUp && !parseHint && (
-              <div className="mt-2 flex items-center gap-2 text-xs bg-warning/10 text-warning rounded-md px-2 py-1.5 border border-warning/30">
-                Follow-up set for <strong>{fmtDate(followUp)}</strong>
-                <button
-                  type="button"
-                  onClick={() => setFollowUp("")}
-                  className="ml-auto opacity-60 hover:opacity-100"
-                >
+                Follow-up <strong>{fmtDate(parseHint.date)}</strong>
+                <button type="button" onClick={() => { setFollowUp(""); setParseHint(null); }} className="ml-auto opacity-60 hover:opacity-100">
                   <X className="size-3" />
                 </button>
               </div>
