@@ -136,58 +136,50 @@ function LeadDetail() {
       {/* Log call panel */}
       <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} />
 
-      {/* Toggles */}
-      <section className="bg-card border border-border rounded-xl p-5 mb-4">
-        <div className="flex flex-wrap gap-3">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={lead.called}
-              onChange={async (e) => {
-                if (e.target.checked) {
-                  updateLead.mutate({ called: true, last_contact_date: todayISO() });
-                  return;
-                }
-                // Uncheck: reset call-related fields but keep email_sent intact
-                const { error: delErr } = await supabase.from("call_logs").delete().eq("lead_id", id);
-                if (delErr) { toast.error(delErr.message); return; }
-                updateLead.mutate({
-                  called: false,
-                  last_contact_date: null,
-                  last_call_result: null,
-                  deal_stage: lead.email_sent ? "contacted" : "new_lead",
-                  next_follow_up: null,
-                  follow_up_source: null,
-                });
-                qc.invalidateQueries({ queryKey: ["lead-logs", id] });
-                qc.invalidateQueries({ queryKey: ["leads-list"] });
-                toast.success("Moved back to All Leads");
-              }}
-              className="size-4 accent-primary"
-            />
-            Called
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={lead.email_sent}
-              onChange={(e) => updateLead.mutate({ email_sent: e.target.checked })}
-              className="size-4 accent-primary"
-            />
-            Email sent
-          </label>
+      {/* Activity strip */}
+      <div className="bg-card border border-border rounded-xl px-4 py-3 mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <button
+          type="button"
+          onClick={async () => {
+            if (!lead.called) { updateLead.mutate({ called: true, last_contact_date: todayISO() }); return; }
+            const { error: delErr } = await supabase.from("call_logs").delete().eq("lead_id", id);
+            if (delErr) { toast.error(delErr.message); return; }
+            updateLead.mutate({ called: false, last_contact_date: null, last_call_result: null, deal_stage: lead.email_sent ? "contacted" : "new_lead", next_follow_up: null, follow_up_source: null });
+            qc.invalidateQueries({ queryKey: ["lead-logs", id] });
+            qc.invalidateQueries({ queryKey: ["leads-list"] });
+            toast.success("Moved back to All Leads");
+          }}
+          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${lead.called ? "bg-emerald-500/15 text-emerald-500" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+        >
+          <span className="size-1.5 rounded-full bg-current shrink-0" /> Called
+        </button>
+        <button
+          type="button"
+          onClick={() => updateLead.mutate({ email_sent: !lead.email_sent })}
+          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${lead.email_sent ? "bg-blue-500/15 text-blue-400" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+        >
+          <span className="size-1.5 rounded-full bg-current shrink-0" /> Email sent
+        </button>
+        <div className="w-px h-4 bg-border mx-0.5" />
+        <div className="flex gap-4 text-xs">
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Last contact</div>
+            <div className="font-semibold stat-num">{fmtDate(lead.last_contact_date)}</div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Next follow-up</div>
+            <div className="font-semibold stat-num">{fmtDate(lead.next_follow_up)}</div>
+          </div>
         </div>
-      </section>
+      </div>
 
       {/* Notes with AI date detection */}
       <NotesEditor lead={lead} onSaved={() => qc.invalidateQueries({ queryKey: ["lead", id] })} />
 
-      {/* History */}
-      <section className="mt-4 bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-border font-semibold text-sm">Call history</div>
-        {(logsQ.data ?? []).length === 0 ? (
-          <div className="p-5 text-sm text-muted-foreground">No calls logged yet.</div>
-        ) : (
+      {/* History — only shown when there are calls */}
+      {(logsQ.data ?? []).length > 0 && (
+        <section className="mt-4 bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-border font-semibold text-sm">Call history</div>
           <ul className="divide-y divide-border text-sm">
             {(logsQ.data ?? []).map((c) => (
               <li key={c.id} className="px-5 py-3">
@@ -202,8 +194,8 @@ function LeadDetail() {
               </li>
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      )}
 
       <button
         onClick={() => { if (confirm("Delete this lead?")) del.mutate(); }}
@@ -289,18 +281,12 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
 
   if (!open) {
     return (
-      <div className="mb-4">
-        <button
-          onClick={() => setOpen(true)}
-          className="w-full bg-primary text-primary-foreground rounded-xl py-3 font-semibold flex items-center justify-center gap-2"
-        >
-          <Phone className="size-4" /> Log a call
-        </button>
-        <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground stat-num mt-2 px-1">
-          <div>Last contact: <span className="text-foreground">{fmtDate(lead.last_contact_date)}</span></div>
-          <div>Next follow-up: <span className="text-foreground">{fmtDate(lead.next_follow_up)}</span></div>
-        </div>
-      </div>
+      <button
+        onClick={() => setOpen(true)}
+        className="w-full bg-primary text-primary-foreground rounded-xl py-3 font-semibold mb-4 flex items-center justify-center gap-2"
+      >
+        <Phone className="size-4" /> Log a call
+      </button>
     );
   }
 
@@ -397,9 +383,15 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
       >
         {log.isPending ? "Saving…" : "Save call"}
       </button>
-      <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground stat-num pt-1">
-        <div>Last contact: <span className="text-foreground">{fmtDate(lead.last_contact_date)}</span></div>
-        <div>Next follow-up: <span className="text-foreground">{fmtDate(lead.next_follow_up)}</span></div>
+      <div className="pt-2 border-t border-border/50 grid grid-cols-2 gap-3 text-xs">
+        <div>
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Last contact</div>
+          <div className="font-semibold stat-num">{fmtDate(lead.last_contact_date)}</div>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Next follow-up</div>
+          <div className="font-semibold stat-num">{fmtDate(lead.next_follow_up)}</div>
+        </div>
       </div>
     </section>
   );
