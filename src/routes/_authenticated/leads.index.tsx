@@ -501,7 +501,7 @@ function AnalyticsView() {
         </div>
         {!objectionsM.data ? (
           <p className="text-xs text-muted-foreground">
-            Click Analyze to let AI cluster objections from your {calls.filter((c) => c.notes).length} notes {rangeLabel.toLowerCase()}.
+            {(() => { const n = calls.filter((c) => c.notes).length; return `${n} call note${n === 1 ? "" : "s"} ${rangeLabel.toLowerCase()} — click Analyze to surface patterns.`; })()}
           </p>
         ) : objectionsM.data.objections.length === 0 ? (
           <p className="text-xs text-muted-foreground">No clear objections detected.</p>
