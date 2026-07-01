@@ -144,7 +144,7 @@ function LeadDetail() {
       <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} />
 
       {/* Activity strip — timeline style */}
-      <div className="mb-4 space-y-3">
+      <div className="mb-4 space-y-4">
         {/* Chips row */}
         <div className="flex items-center gap-2">
           <button
@@ -174,6 +174,8 @@ function LeadDetail() {
             <span className={`size-2 rounded-full shrink-0 ${lead.email_sent ? "bg-blue-400" : "bg-muted-foreground/40"}`} /> Email sent
           </button>
         </div>
+
+        <div className="border-t border-border" />
 
         {/* Timeline bar */}
         <div className="flex items-center gap-3">
