@@ -6,11 +6,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const analyzeObjections = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ notes: z.array(z.string()).max(500) }).parse(input),
+    z.object({ entries: z.array(z.string()).max(500) }).parse(input),
   )
   .handler(async ({ data }) => {
     type Result = { objections: { label: string; count: number }[]; error: string | null };
-    if (data.notes.length === 0) return { objections: [], error: null } satisfies Result;
+    if (data.entries.length === 0) return { objections: [], error: null } satisfies Result;
     const key = process.env.LOVABLE_API_KEY;
     if (!key) return { objections: [], error: "AI analysis isn't configured (missing LOVABLE_API_KEY)." } satisfies Result;
     const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
@@ -22,10 +22,10 @@ export const analyzeObjections = createServerFn({ method: "POST" })
     try {
       const { text } = await generateText({
         model: gateway("google/gemini-3-flash-preview"),
-        prompt: `You are a sales coach analyzing cold-call outcomes. Each line below is one call entry, formatted as "Result (source if any) note text". Identify the TOP recurring reasons leads didn't move forward — cluster similar entries into one label (e.g. "Gatekeeper blocked", "Decision maker not interested", "Already using competitor", "Bad timing", "No answer/voicemail"). Return up to 8, sorted by count descending. Count = how many distinct entries fall into that cluster. Include "No Answer / Voicemail" as a cluster if those dominate.
+        prompt: `You are a sales analytics assistant. Each line is one cold-call log entry in the format "Result | Objection Source | Notes". Cluster ALL entries into meaningful outcome categories. Examples: "Gatekeeper blocked", "Decision maker not interested", "Bad timing / try later", "No answer", "Voicemail left", "Meeting booked", "Price objection", "Already using competitor", "Wrong contact". Return up to 8 clusters sorted by count descending. ALWAYS return at least 1 cluster — even if notes are brief, group by result type. Count = number of entries in that cluster.
 
-Calls:
-${data.notes.map((n, i) => `${i + 1}. ${n}`).join("\n")}
+Call logs:
+${data.entries.map((n, i) => `${i + 1}. ${n}`).join("\n")}
 
 Respond with ONLY a JSON object — no markdown, no explanation:
 {"objections":[{"label":"...","count":N}]}`,

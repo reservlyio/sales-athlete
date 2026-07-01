@@ -373,7 +373,7 @@ function AnalyticsView() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("call_logs")
-        .select("id,call_date,result,notes")
+        .select("id,call_date,result,notes,objection_source")
         .gte("call_date", start)
         .order("call_date", { ascending: true });
       if (error) throw error;
@@ -384,8 +384,10 @@ function AnalyticsView() {
   const runObjections = useServerFn(analyzeObjections);
   const objectionsM = useMutation({
     mutationFn: async () => {
-      const notes = (callsQ.data ?? []).map((c) => c.notes).filter((n): n is string => !!n && n.trim().length > 3);
-      return runObjections({ data: { notes } });
+      const entries = (callsQ.data ?? []).map((c) =>
+        [c.result, c.objection_source, c.notes].filter(Boolean).join(" | ")
+      ).filter((e) => e.trim().length > 0);
+      return runObjections({ data: { entries } });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -452,6 +454,38 @@ function AnalyticsView() {
       )}
 
       <section className="bg-card border border-border rounded-xl p-5">
+        <h3 className="font-semibold text-sm mb-3">Call outcomes — {rangeLabel.toLowerCase()}</h3>
+        {callsQ.isLoading ? (
+          <div className="text-sm text-muted-foreground">Loading…</div>
+        ) : total === 0 ? (
+          <p className="text-xs text-muted-foreground">No calls logged {rangeLabel.toLowerCase()}.</p>
+        ) : (
+          <ul className="space-y-2.5">
+            {([
+              { label: "No Answer", count: calls.filter((c) => c.result === "No Answer").length, color: "bg-muted-foreground/50" },
+              { label: "Voicemail left", count: voicemails, color: "bg-blue-400" },
+              { label: "Objection — Gatekeeper", count: calls.filter((c) => c.result === "Objection/Not Interested" && c.objection_source === "gatekeeper").length, color: "bg-destructive" },
+              { label: "Objection — Decision Maker", count: calls.filter((c) => c.result === "Objection/Not Interested" && c.objection_source === "decision_maker").length, color: "bg-orange-400" },
+              { label: "Transferred to DM", count: transfers, color: "bg-primary" },
+              { label: "Meeting Booked", count: meetings, color: "bg-success" },
+            ] as { label: string; count: number; color: string }[])
+              .filter((o) => o.count > 0)
+              .map((o) => (
+                <li key={o.label} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">{o.label}</span>
+                    <span className="stat-num text-xs font-semibold">{o.count}</span>
+                  </div>
+                  <div className="bg-muted rounded-full h-1.5">
+                    <div className={`${o.color} h-1.5 rounded-full transition-all`} style={{ width: `${(o.count / total) * 100}%` }} />
+                  </div>
+                </li>
+              ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="bg-card border border-border rounded-xl p-5">
         <h3 className="font-semibold text-sm mb-3">Call volume — {rangeLabel.toLowerCase()}</h3>
         {callsQ.isLoading ? (
           <div className="text-sm text-muted-foreground">Loading…</div>
@@ -501,7 +535,7 @@ function AnalyticsView() {
         </div>
         {!objectionsM.data ? (
           <p className="text-xs text-muted-foreground">
-            {(() => { const n = calls.filter((c) => c.notes).length; return `${n} call note${n === 1 ? "" : "s"} ${rangeLabel.toLowerCase()} — click Analyze to surface patterns.`; })()}
+            {total} call{total === 1 ? "" : "s"} {rangeLabel.toLowerCase()} — click Analyze to cluster objection patterns with AI.
           </p>
         ) : objectionsM.data.objections.length === 0 ? (
           <p className="text-xs text-muted-foreground">No clear objections detected.</p>
