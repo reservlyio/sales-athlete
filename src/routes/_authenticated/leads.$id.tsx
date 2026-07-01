@@ -183,55 +183,51 @@ function LeadDetail() {
       {/* Notes with AI date detection */}
       <NotesEditor lead={lead} onSaved={() => qc.invalidateQueries({ queryKey: ["lead", id] })} />
 
-      {/* History — always shown, collapsible, starts open */}
-      <section className="mt-4 bg-card border border-border rounded-xl overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setHistoryOpen((v) => !v)}
-          className="w-full flex items-center justify-between px-5 py-3 border-b border-border font-semibold text-sm hover:bg-muted/30 transition-colors"
-        >
-          <span>Call history</span>
-          <span className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground font-normal">
-              {(logsQ.data ?? []).length} call{(logsQ.data ?? []).length === 1 ? "" : "s"}
+      {/* History — hidden when empty, collapsible, starts open */}
+      {(logsQ.data ?? []).length > 0 && (
+        <section className="mt-4 bg-card border border-border rounded-xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setHistoryOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-5 py-3 border-b border-border font-semibold text-sm hover:bg-muted/30 transition-colors"
+          >
+            <span>Call history</span>
+            <span className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground font-normal">
+                {logsQ.data!.length} call{logsQ.data!.length === 1 ? "" : "s"}
+              </span>
+              <ChevronDown className={`size-4 text-muted-foreground transition-transform ${historyOpen ? "" : "-rotate-90"}`} />
             </span>
-            <ChevronDown className={`size-4 text-muted-foreground transition-transform ${historyOpen ? "" : "-rotate-90"}`} />
-          </span>
-        </button>
-        {historyOpen && (
-          <>
-            {(logsQ.data ?? []).length === 0 ? (
-              <p className="px-5 py-4 text-sm text-muted-foreground">No calls logged yet.</p>
-            ) : (
-              <ul className="divide-y divide-border text-sm">
-                {logsQ.data!.map((c) => (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      onClick={() => toggleLog(c.id)}
-                      className="w-full flex items-center justify-between px-5 py-3 hover:bg-muted/20 transition-colors text-left"
-                    >
-                      <span className="font-medium">{c.result}</span>
-                      <span className="flex items-center gap-2">
-                        <span className="stat-num text-xs text-muted-foreground">{fmtDate(c.call_date)}</span>
-                        <ChevronDown className={`size-3.5 text-muted-foreground transition-transform ${collapsedLogs.has(c.id) ? "-rotate-90" : ""}`} />
-                      </span>
-                    </button>
-                    {!collapsedLogs.has(c.id) && (c.notes || c.follow_up_date) && (
-                      <div className="px-5 pb-3 space-y-1">
-                        {c.notes && <p className="text-xs text-muted-foreground">{c.notes}</p>}
-                        {c.follow_up_date && (
-                          <p className="text-xs text-warning">Follow up: {fmtDate(c.follow_up_date)}</p>
-                        )}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        )}
-      </section>
+          </button>
+          {historyOpen && (
+            <ul className="divide-y divide-border text-sm">
+              {logsQ.data!.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => toggleLog(c.id)}
+                    className="w-full flex items-center justify-between px-5 py-3 hover:bg-muted/20 transition-colors text-left"
+                  >
+                    <span className="font-medium">{c.result}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="stat-num text-xs text-muted-foreground">{fmtDate(c.call_date)}</span>
+                      <ChevronDown className={`size-3.5 text-muted-foreground transition-transform ${collapsedLogs.has(c.id) ? "-rotate-90" : ""}`} />
+                    </span>
+                  </button>
+                  {!collapsedLogs.has(c.id) && (c.notes || c.follow_up_date) && (
+                    <div className="px-5 pb-3 space-y-1">
+                      {c.notes && <p className="text-xs text-muted-foreground">{c.notes}</p>}
+                      {c.follow_up_date && (
+                        <p className="text-xs text-warning">Follow up: {fmtDate(c.follow_up_date)}</p>
+                      )}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <button
         onClick={() => { if (confirm("Delete this lead?")) del.mutate(); }}
