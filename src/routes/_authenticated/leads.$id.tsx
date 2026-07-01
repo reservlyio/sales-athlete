@@ -144,7 +144,7 @@ function LeadDetail() {
       <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} />
 
       {/* Activity strip — timeline style */}
-      <div className="bg-card border border-border rounded-xl px-5 py-5 mt-4 mb-2 space-y-5">
+      <div className="bg-card border border-border rounded-xl px-5 py-5 mb-6 space-y-5">
         {/* Chips row */}
         <div className="flex items-center gap-2">
           <button
@@ -194,13 +194,11 @@ function LeadDetail() {
       </div>
 
       {/* Notes with AI date detection */}
-      <div className="mb-2">
-        <NotesEditor lead={lead} onSaved={() => qc.invalidateQueries({ queryKey: ["lead", id] })} />
-      </div>
+      <NotesEditor lead={lead} onSaved={() => qc.invalidateQueries({ queryKey: ["lead", id] })} />
 
       {/* History — hidden when empty, collapsible, starts open */}
       {(logsQ.data ?? []).length > 0 && (
-        <section className="bg-card border border-border rounded-xl overflow-hidden">
+        <section className="mt-4 bg-card border border-border rounded-xl overflow-hidden">
           <button
             type="button"
             onClick={() => setHistoryOpen((v) => !v)}
