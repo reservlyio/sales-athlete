@@ -8,7 +8,9 @@ import { CALL_RESULTS, OBJECTION_SOURCES, DEAL_STAGES, STAGE_COLOR, STAGE_LABEL,
 import { parseFollowUpDate } from "@/lib/ai.functions";
 import { parseFollowUpRegex } from "@/lib/follow-up-parser";
 import { toast } from "sonner";
-import { ArrowLeft, Phone, Mail, Globe, MapPin, Sparkles, X, Trash2 } from "lucide-react";
+import { ArrowLeft, Phone, Mail, Globe, MapPin, Sparkles, X, Trash2, CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 export const Route = createFileRoute("/_authenticated/leads/$id")({
   head: () => ({ meta: [{ title: "Lead" }] }),
@@ -213,6 +215,7 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
   const [objectionSource, setObjectionSource] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [followUp, setFollowUp] = useState("");
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const parser = useServerFn(parseFollowUpDate);
   const [parseHint, setParseHint] = useState<{ date: string; snippet: string | null } | null>(null);
@@ -369,12 +372,38 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
       </div>
       <div>
         <label className="text-xs text-muted-foreground">Follow-up date (optional)</label>
-        <input
-          type="date"
-          value={followUp}
-          onChange={(e) => setFollowUp(e.target.value)}
-          className="w-full mt-1 bg-input border border-border rounded-md px-3 py-2 text-sm"
-        />
+        <div className="mt-1 flex items-center gap-2">
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 text-sm bg-input border border-border rounded-md px-3 py-2 text-left w-full hover:border-primary/60 focus:outline-none focus:border-primary transition-colors"
+              >
+                <CalendarIcon className="size-4 text-muted-foreground shrink-0" />
+                <span className={followUp ? "text-foreground" : "text-muted-foreground"}>
+                  {followUp ? fmtDate(followUp) : "Pick a date…"}
+                </span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={followUp ? new Date(followUp + "T00:00:00") : undefined}
+                onSelect={(date) => {
+                  setFollowUp(date ? date.toISOString().split("T")[0] : "");
+                  setCalendarOpen(false);
+                }}
+                disabled={{ before: new Date(todayISO() + "T00:00:00") }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+          {followUp && (
+            <button type="button" onClick={() => setFollowUp("")} className="shrink-0 opacity-60 hover:opacity-100">
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
       </div>
       <button
         onClick={() => log.mutate()}
@@ -383,16 +412,6 @@ function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) 
       >
         {log.isPending ? "Saving…" : "Save call"}
       </button>
-      <div className="pt-2 border-t border-border/50 grid grid-cols-2 gap-3 text-xs">
-        <div>
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Last contact</div>
-          <div className="font-semibold stat-num">{fmtDate(lead.last_contact_date)}</div>
-        </div>
-        <div>
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Next follow-up</div>
-          <div className="font-semibold stat-num">{fmtDate(lead.next_follow_up)}</div>
-        </div>
-      </div>
     </section>
   );
 }
