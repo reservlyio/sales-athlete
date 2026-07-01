@@ -174,52 +174,6 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Follow-ups */}
-      <section className="bg-card rounded-xl border border-border overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <div>
-            <h2 className="font-semibold">Follow up today</h2>
-          </div>
-          <span className="stat-num text-sm bg-warning/20 text-warning px-2 py-0.5 rounded-md font-semibold">
-            {followupsQ.data?.length ?? 0}
-          </span>
-        </div>
-        {followupsQ.isLoading ? (
-          <div className="p-5 text-muted-foreground text-sm">Loading…</div>
-        ) : (followupsQ.data ?? []).length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">
-            Nothing due. Go hunt new leads. 🎯
-          </div>
-        ) : (
-          <ul className="divide-y divide-border">
-            {(followupsQ.data ?? []).map((l) => (
-              <li key={l.id}>
-                <Link
-                  to="/leads/$id"
-                  params={{ id: l.id }}
-                  className="flex items-center justify-between px-5 py-3 hover:bg-accent/40"
-                >
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">{l.company}</div>
-                    <div className="text-xs text-muted-foreground stat-num">
-                      Due {fmtDate(l.next_follow_up)} {l.phone && `· ${l.phone}`}
-                    </div>
-                  </div>
-                  {l.phone && (
-                    <a
-                      href={`tel:${l.phone}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="ml-3 inline-flex items-center gap-1 bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-semibold"
-                    >
-                      <Phone className="size-3" /> Call
-                    </a>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </AppShell>
   );
 }
