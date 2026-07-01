@@ -162,17 +162,17 @@ export function CallLogSheet({
         </div>
 
         {/* Scrollable body */}
-        <div className="px-5 py-3 overflow-y-auto flex-1 space-y-4">
+        <div className="px-6 py-5 overflow-y-auto flex-1 space-y-6">
           <div>
-            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Call result</label>
-            <div className="mt-2 space-y-2">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Call result</label>
+            <div className="mt-3 space-y-2">
               <div className="grid grid-cols-2 gap-2">
               {CALL_RESULTS.slice(0, -1).map((r) => (
                 <button
                   key={r}
                   type="button"
                   onClick={() => { setResult(r); if (r !== "Objection/Not Interested") setObjectionSource(null); }}
-                  className={`text-xs py-3 px-2 rounded-lg border font-medium transition-colors leading-tight ${
+                  className={`text-xs py-3 px-2 rounded-full border font-medium transition-colors leading-tight ${
                     result === r
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-muted/30 border-border text-foreground hover:border-primary/50"
@@ -185,7 +185,7 @@ export function CallLogSheet({
               <button
                 type="button"
                 onClick={() => setResult("Meeting Booked")}
-                className={`w-full text-sm py-3 px-4 rounded-lg border font-semibold transition-colors ${
+                className={`w-full text-sm py-3 px-4 rounded-full border font-semibold transition-colors ${
                   result === "Meeting Booked"
                     ? "bg-success text-white border-success"
                     : "bg-success/10 border-success/40 text-success hover:bg-success/20 hover:border-success/60"
@@ -196,7 +196,7 @@ export function CallLogSheet({
             </div>
             {result === "Objection/Not Interested" && (
               <div className="mt-2">
-                <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                   Came from
                 </label>
                 <div className="grid grid-cols-2 gap-2 mt-1">
@@ -205,7 +205,7 @@ export function CallLogSheet({
                       key={s.value}
                       type="button"
                       onClick={() => setObjectionSource(s.value)}
-                      className={`text-xs py-2 px-2 rounded-lg border font-medium transition-colors ${
+                      className={`text-xs py-2 px-2 rounded-full border font-medium transition-colors ${
                         objectionSource === s.value
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-muted/30 border-border text-foreground hover:border-primary/50"
@@ -220,13 +220,13 @@ export function CallLogSheet({
           </div>
 
           <div>
-            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
               Quick note <Sparkles className="size-3 text-primary" />
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              rows={3}
+              rows={4}
               placeholder="e.g. Follow up Tuesday, send proposal…"
               className="w-full mt-2 bg-muted/30 border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
             />
@@ -242,7 +242,7 @@ export function CallLogSheet({
           </div>
 
           <div>
-            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
               Follow-up (optional)
             </label>
             <div className="flex flex-wrap gap-2 mt-2">
