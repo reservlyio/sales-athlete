@@ -45,6 +45,7 @@ type CallLog = { id: string; call_date: string; result: string; notes: string | 
 function LeadDetail() {
   const { id } = Route.useParams();
   const { logCall } = Route.useSearch();
+  const shouldAutoOpen = useRef(logCall);
   const qc = useQueryClient();
   const nav = useNavigate();
 
@@ -151,7 +152,7 @@ function LeadDetail() {
       </div>
 
       {/* Log call panel */}
-      <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} autoOpen={logCall} />
+      <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} autoOpen={shouldAutoOpen.current} />
 
       {/* Activity strip — timeline style */}
       <div className="bg-card border border-border rounded-xl px-5 py-5 mt-8 mb-5 space-y-5">
