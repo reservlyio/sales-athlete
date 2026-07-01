@@ -13,9 +13,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 
 export const Route = createFileRoute("/_authenticated/leads/$id")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    logCall: search.logCall === "1",
-  }),
   head: () => ({ meta: [{ title: "Lead" }] }),
   component: LeadDetail,
 });
@@ -44,14 +41,18 @@ type CallLog = { id: string; call_date: string; result: string; notes: string | 
 
 function LeadDetail() {
   const { id } = Route.useParams();
-  const { logCall } = Route.useSearch();
-  const shouldAutoOpen = useRef(logCall);
   const qc = useQueryClient();
   const nav = useNavigate();
 
+  // Capture logCall from raw URL before any router re-render can wipe it
+  const shouldAutoOpen = useRef(new URLSearchParams(window.location.search).get("logCall") === "1");
+
   useEffect(() => {
-    if (logCall) {
-      nav({ to: "/leads/$id", params: { id }, search: {}, replace: true });
+    if (shouldAutoOpen.current) {
+      // Strip param from URL without router navigation (avoids remount)
+      const url = new URL(window.location.href);
+      url.searchParams.delete("logCall");
+      window.history.replaceState(null, "", url.toString());
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
