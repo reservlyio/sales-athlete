@@ -13,6 +13,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 
 export const Route = createFileRoute("/_authenticated/leads/$id")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    logCall: search.logCall === "true",
+  }),
   head: () => ({ meta: [{ title: "Lead" }] }),
   component: LeadDetail,
 });
@@ -41,6 +44,7 @@ type CallLog = { id: string; call_date: string; result: string; notes: string | 
 
 function LeadDetail() {
   const { id } = Route.useParams();
+  const { logCall } = Route.useSearch();
   const qc = useQueryClient();
   const nav = useNavigate();
 
@@ -141,7 +145,7 @@ function LeadDetail() {
       </div>
 
       {/* Log call panel */}
-      <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} />
+      <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} autoOpen={logCall} />
 
       {/* Activity strip — timeline style */}
       <div className="bg-card border border-border rounded-xl px-5 py-5 mt-8 mb-5 space-y-5">
@@ -254,8 +258,8 @@ function LeadDetail() {
   );
 }
 
-function LogCallPanel({ lead, onLogged }: { lead: Lead; onLogged: () => void }) {
-  const [open, setOpen] = useState(false);
+function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () => void; autoOpen?: boolean }) {
+  const [open, setOpen] = useState(autoOpen ?? false);
   const [result, setResult] = useState<string>("No Answer");
   const [objectionSource, setObjectionSource] = useState<string | null>(null);
   const [notes, setNotes] = useState("");

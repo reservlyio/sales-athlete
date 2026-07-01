@@ -68,12 +68,6 @@ export function CallLogSheet({
     };
   }, [onClose]);
 
-  const addDays = (iso: string, n: number) => {
-    const d = new Date(iso + "T00:00:00");
-    d.setDate(d.getDate() + n);
-    return d.toISOString().split("T")[0];
-  };
-
   const copyPhone = async () => {
     if (!lead.phone) return;
     try {
@@ -245,44 +239,21 @@ export function CallLogSheet({
             <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
               Follow-up (optional)
             </label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {[
-                { label: "Tomorrow", days: 1 },
-                { label: "In 3 days", days: 3 },
-                { label: "Next week", days: 7 },
-                { label: "In 2 weeks", days: 14 },
-              ].map(({ label, days }) => {
-                const date = addDays(todayISO(), days);
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => {
-                      setFollowUp(followUp === date ? "" : date);
-                      setCalendarOpen(false);
-                    }}
-                    className={`text-xs py-1.5 px-3 rounded-full border font-medium transition-colors ${
-                      followUp === date
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-muted/30 border-border text-foreground hover:border-primary/50"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+            <div className="mt-2">
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className={`text-xs py-1.5 px-3 rounded-full border font-medium transition-colors inline-flex items-center gap-1 ${
+                    className={`text-xs py-1.5 px-3 rounded-full border font-medium transition-colors inline-flex items-center gap-1.5 ${
                       calendarOpen
                         ? "bg-muted border-primary text-primary"
+                        : followUp
+                        ? "bg-primary/10 border-primary/40 text-primary"
                         : "bg-muted/30 border-border text-foreground hover:border-primary/50"
                     }`}
                   >
                     <CalendarIcon className="size-3" />
-                    Custom date
+                    {followUp ? fmtDate(followUp) : "Select a date…"}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
