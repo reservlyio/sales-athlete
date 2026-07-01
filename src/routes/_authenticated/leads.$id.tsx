@@ -144,7 +144,7 @@ function LeadDetail() {
       <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} />
 
       {/* Activity strip — timeline style */}
-      <div className="bg-card border border-border rounded-xl px-5 py-5 mb-6 mt-4 space-y-5">
+      <div className="bg-card border border-border rounded-xl px-5 py-5 mb-6 space-y-5">
         {/* Chips row */}
         <div className="flex items-center gap-2">
           <button
