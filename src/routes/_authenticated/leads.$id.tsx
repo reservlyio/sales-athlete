@@ -144,38 +144,58 @@ function LeadDetail() {
       <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} />
 
       {/* Activity strip */}
-      <div className="bg-card border border-border rounded-xl px-4 py-3 mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <button
-          type="button"
-          onClick={async () => {
-            if (!lead.called) { updateLead.mutate({ called: true, last_contact_date: todayISO() }); return; }
-            const { error: delErr } = await supabase.from("call_logs").delete().eq("lead_id", id);
-            if (delErr) { toast.error(delErr.message); return; }
-            updateLead.mutate({ called: false, last_contact_date: null, last_call_result: null, deal_stage: lead.email_sent ? "contacted" : "new_lead", next_follow_up: null, follow_up_source: null });
-            qc.invalidateQueries({ queryKey: ["lead-logs", id] });
-            qc.invalidateQueries({ queryKey: ["leads-list"] });
-            toast.success("Moved back to All Leads");
-          }}
-          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${lead.called ? "bg-emerald-500/15 text-emerald-500" : "bg-muted text-muted-foreground hover:text-foreground"}`}
-        >
-          <span className="size-1.5 rounded-full bg-current shrink-0" /> Called
-        </button>
-        <button
-          type="button"
-          onClick={() => updateLead.mutate({ email_sent: !lead.email_sent })}
-          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${lead.email_sent ? "bg-blue-500/15 text-blue-400" : "bg-muted text-muted-foreground hover:text-foreground"}`}
-        >
-          <span className="size-1.5 rounded-full bg-current shrink-0" /> Email sent
-        </button>
-        <div className="w-px h-4 bg-border mx-0.5" />
-        <div className="flex gap-4 text-xs">
-          <div>
+      <div className="bg-card border border-border rounded-xl p-2 mb-4 flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 px-2 py-1.5">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!lead.called) { updateLead.mutate({ called: true, last_contact_date: todayISO() }); return; }
+              const { error: delErr } = await supabase.from("call_logs").delete().eq("lead_id", id);
+              if (delErr) { toast.error(delErr.message); return; }
+              updateLead.mutate({ called: false, last_contact_date: null, last_call_result: null, deal_stage: lead.email_sent ? "contacted" : "new_lead", next_follow_up: null, follow_up_source: null });
+              qc.invalidateQueries({ queryKey: ["lead-logs", id] });
+              qc.invalidateQueries({ queryKey: ["leads-list"] });
+              toast.success("Moved back to All Leads");
+            }}
+            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-full transition-colors ${lead.called ? "bg-emerald-500/15 text-emerald-500" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+          >
+            <span className="size-1.5 rounded-full bg-current shrink-0" /> Called
+          </button>
+          <button
+            type="button"
+            onClick={() => updateLead.mutate({ email_sent: !lead.email_sent })}
+            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-full transition-colors ${lead.email_sent ? "bg-blue-500/15 text-blue-400" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+          >
+            <span className="size-1.5 rounded-full bg-current shrink-0" /> Email sent
+          </button>
+        </div>
+
+        <div className="hidden sm:block w-px h-8 bg-border shrink-0" />
+
+        <div className="flex items-center gap-4 sm:gap-6 px-2 py-1.5 overflow-x-auto">
+          <div className="min-w-[80px]">
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Last contact</div>
-            <div className="font-semibold stat-num">{fmtDate(lead.last_contact_date)}</div>
+            <div className="font-semibold text-sm stat-num">{fmtDate(lead.last_contact_date)}</div>
           </div>
-          <div>
+          <div className="min-w-[100px]">
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Next follow-up</div>
-            <div className="font-semibold stat-num">{fmtDate(lead.next_follow_up)}</div>
+            <div
+              className={`font-semibold text-sm stat-num inline-flex items-center gap-1.5 ${
+                lead.next_follow_up && lead.next_follow_up < todayISO() ? "text-warning" : ""
+              }`}
+            >
+              {lead.next_follow_up && lead.next_follow_up < todayISO() ? (
+                <>
+                  <AlertCircle className="size-3.5" />
+                  {fmtDate(lead.next_follow_up)}
+                </>
+              ) : (
+                <>
+                  <Clock className="size-3.5 text-muted-foreground" />
+                  {fmtDate(lead.next_follow_up)}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
