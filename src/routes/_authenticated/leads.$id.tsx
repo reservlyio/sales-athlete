@@ -143,8 +143,9 @@ function LeadDetail() {
       {/* Log call panel */}
       <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} />
 
-      {/* Activity strip */}
-      <div className="bg-card border border-border rounded-xl px-4 py-3 mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+      {/* Activity grid */}
+      <div className="mb-4 grid grid-cols-2 gap-2">
+        {/* Called toggle */}
         <button
           type="button"
           onClick={async () => {
@@ -156,27 +157,40 @@ function LeadDetail() {
             qc.invalidateQueries({ queryKey: ["leads-list"] });
             toast.success("Moved back to All Leads");
           }}
-          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${lead.called ? "bg-emerald-500/15 text-emerald-500" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+          className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border font-semibold text-sm transition-all text-left ${
+            lead.called
+              ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-500"
+              : "bg-card border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+          }`}
         >
-          <span className="size-1.5 rounded-full bg-current shrink-0" /> Called
+          <span className={`size-2.5 rounded-full shrink-0 transition-colors ${lead.called ? "bg-emerald-500" : "bg-muted-foreground/30"}`} />
+          Called
         </button>
+
+        {/* Email sent toggle */}
         <button
           type="button"
           onClick={() => updateLead.mutate({ email_sent: !lead.email_sent })}
-          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${lead.email_sent ? "bg-blue-500/15 text-blue-400" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+          className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border font-semibold text-sm transition-all text-left ${
+            lead.email_sent
+              ? "bg-blue-500/10 border-blue-500/40 text-blue-400"
+              : "bg-card border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+          }`}
         >
-          <span className="size-1.5 rounded-full bg-current shrink-0" /> Email sent
+          <span className={`size-2.5 rounded-full shrink-0 transition-colors ${lead.email_sent ? "bg-blue-400" : "bg-muted-foreground/30"}`} />
+          Email sent
         </button>
-        <div className="w-px h-4 bg-border mx-0.5" />
-        <div className="flex gap-4 text-xs">
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Last contact</div>
-            <div className="font-semibold stat-num">{fmtDate(lead.last_contact_date)}</div>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Next follow-up</div>
-            <div className="font-semibold stat-num">{fmtDate(lead.next_follow_up)}</div>
-          </div>
+
+        {/* Last contact */}
+        <div className="bg-card border border-border rounded-xl px-4 py-3">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Last contact</div>
+          <div className="font-semibold text-sm stat-num">{fmtDate(lead.last_contact_date)}</div>
+        </div>
+
+        {/* Next follow-up */}
+        <div className="bg-card border border-border rounded-xl px-4 py-3">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Next follow-up</div>
+          <div className="font-semibold text-sm stat-num">{fmtDate(lead.next_follow_up)}</div>
         </div>
       </div>
 
