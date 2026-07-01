@@ -166,27 +166,11 @@ function LeadDetail() {
         <div className="flex gap-4 text-xs">
           <div>
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Last contact</div>
-            <div className="font-semibold stat-num">
-              {lead.last_contact_date
-                ? fmtDate(lead.last_contact_date)
-                : <span className="text-red-400/80 font-medium">Never contacted</span>}
-            </div>
+            <div className="font-semibold stat-num">{fmtDate(lead.last_contact_date)}</div>
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Next follow-up</div>
-            <div className="font-semibold stat-num">
-              {(() => {
-                const d = lead.next_follow_up;
-                if (!d) return "—";
-                const today = todayISO();
-                if (d === today) return <span className="text-amber-500">{fmtDate(d)} · Today</span>;
-                if (d < today) {
-                  const days = Math.round((new Date(today + "T00:00:00").getTime() - new Date(d + "T00:00:00").getTime()) / 86400000);
-                  return <span className="text-red-500">{fmtDate(d)} · {days} day{days === 1 ? "" : "s"} overdue</span>;
-                }
-                return fmtDate(d);
-              })()}
-            </div>
+            <div className="font-semibold stat-num">{fmtDate(lead.next_follow_up)}</div>
           </div>
         </div>
       </div>
