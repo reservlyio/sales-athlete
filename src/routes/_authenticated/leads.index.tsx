@@ -309,11 +309,11 @@ function LeadsPage() {
                             toast.success(`${l.company} moved back to All Leads`);
                           }}
                           title={l.called ? "Click to log another call · Double-click to undo" : "Log a call"}
-                          className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors select-none ${
+                          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors select-none ${
                             l.called ? "bg-emerald-500/15 text-emerald-500" : "bg-muted/60 text-muted-foreground hover:text-foreground"
                           }`}
                         >
-                          <span className="size-1.5 rounded-full bg-current shrink-0" /> Called
+                          <span className="size-2 rounded-full bg-current shrink-0" /> Called
                         </button>
                         <button
                           onClick={(e) => {
@@ -326,11 +326,11 @@ function LeadsPage() {
                               },
                             });
                           }}
-                          className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors ${
+                          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
                             l.email_sent ? "bg-blue-500/15 text-blue-400" : "bg-muted/60 text-muted-foreground hover:text-foreground"
                           }`}
                         >
-                          <span className="size-1.5 rounded-full bg-current shrink-0" /> Emailed
+                          <span className="size-2 rounded-full bg-current shrink-0" /> Emailed
                         </button>
                       </div>
                     </li>
