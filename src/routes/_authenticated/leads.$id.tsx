@@ -143,9 +143,10 @@ function LeadDetail() {
       {/* Log call panel */}
       <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} />
 
-      {/* Activity strip */}
-      <div className="bg-card border border-border rounded-xl px-5 py-4 mb-4 flex items-center gap-4">
-        <div className="flex items-center gap-2 shrink-0">
+      {/* Activity strip — timeline style */}
+      <div className="mb-4 space-y-3">
+        {/* Chips row */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={async () => {
@@ -174,16 +175,20 @@ function LeadDetail() {
           </button>
         </div>
 
-        <div className="w-px self-stretch bg-border shrink-0" />
-
-        <div className="flex gap-6 text-sm min-w-0">
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Last contact</div>
-            <div className="font-semibold stat-num">{fmtDate(lead.last_contact_date)}</div>
+        {/* Timeline bar */}
+        <div className="flex items-center gap-3">
+          <div className="text-left shrink-0">
+            <div className="font-semibold text-sm stat-num">{fmtDate(lead.last_contact_date)}</div>
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Last contact</div>
           </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Next follow-up</div>
-            <div className="font-semibold stat-num">{fmtDate(lead.next_follow_up)}</div>
+          <div className="flex-1 h-px bg-border relative">
+            <div className="absolute inset-y-0 -left-1 -right-1 flex items-center justify-center">
+              <div className="size-1.5 rounded-full bg-border" />
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="font-semibold text-sm stat-num">{fmtDate(lead.next_follow_up)}</div>
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Next follow-up</div>
           </div>
         </div>
       </div>
