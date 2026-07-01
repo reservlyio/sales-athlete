@@ -181,7 +181,7 @@ function LeadDetail() {
             <div className="font-semibold text-sm stat-num">{fmtDate(lead.last_contact_date)}</div>
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Last contact</div>
           </div>
-          <div className="flex-1 h-px bg-border relative">
+          <div className="w-12 h-px bg-border relative shrink-0">
             <div className="absolute inset-y-0 -left-1 -right-1 flex items-center justify-center">
               <div className="size-1.5 rounded-full bg-border" />
             </div>
