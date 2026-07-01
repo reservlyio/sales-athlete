@@ -8,7 +8,7 @@ import { CALL_RESULTS, OBJECTION_SOURCES, DEAL_STAGES, STAGE_COLOR, STAGE_LABEL,
 import { parseFollowUpDate } from "@/lib/ai.functions";
 import { parseFollowUpRegex } from "@/lib/follow-up-parser";
 import { toast } from "sonner";
-import { ArrowLeft, Phone, Mail, Globe, MapPin, Sparkles, X, Trash2, CalendarIcon } from "lucide-react";
+import { ArrowLeft, Phone, Mail, Globe, MapPin, Sparkles, X, Trash2, CalendarIcon, ChevronDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
@@ -75,6 +75,11 @@ function LeadDetail() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lead", id] }),
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const [historyOpen, setHistoryOpen] = useState(true);
+  const [collapsedLogs, setCollapsedLogs] = useState<Set<string>>(new Set());
+  const toggleLog = (logId: string) =>
+    setCollapsedLogs((prev) => { const n = new Set(prev); n.has(logId) ? n.delete(logId) : n.add(logId); return n; });
 
   const del = useMutation({
     mutationFn: async () => {
@@ -178,24 +183,44 @@ function LeadDetail() {
       {/* Notes with AI date detection */}
       <NotesEditor lead={lead} onSaved={() => qc.invalidateQueries({ queryKey: ["lead", id] })} />
 
-      {/* History — only shown when there are calls */}
+      {/* History — collapsible, starts open */}
       {(logsQ.data ?? []).length > 0 && (
         <section className="mt-4 bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-border font-semibold text-sm">Call history</div>
-          <ul className="divide-y divide-border text-sm">
-            {(logsQ.data ?? []).map((c) => (
-              <li key={c.id} className="px-5 py-3">
-                <div className="flex justify-between">
-                  <span className="font-medium">{c.result}</span>
-                  <span className="stat-num text-xs text-muted-foreground">{fmtDate(c.call_date)}</span>
-                </div>
-                {c.notes && <p className="text-xs text-muted-foreground mt-1">{c.notes}</p>}
-                {c.follow_up_date && (
-                  <p className="text-xs text-warning mt-1">Follow up: {fmtDate(c.follow_up_date)}</p>
-                )}
-              </li>
-            ))}
-          </ul>
+          <button
+            type="button"
+            onClick={() => setHistoryOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-5 py-3 border-b border-border font-semibold text-sm hover:bg-muted/30 transition-colors"
+          >
+            Call history <span className="text-xs text-muted-foreground font-normal">{logsQ.data!.length} call{logsQ.data!.length === 1 ? "" : "s"}</span>
+            <ChevronDown className={`size-4 text-muted-foreground transition-transform ${historyOpen ? "" : "-rotate-90"}`} />
+          </button>
+          {historyOpen && (
+            <ul className="divide-y divide-border text-sm">
+              {logsQ.data!.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => toggleLog(c.id)}
+                    className="w-full flex items-center justify-between px-5 py-3 hover:bg-muted/20 transition-colors text-left"
+                  >
+                    <span className="font-medium">{c.result}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="stat-num text-xs text-muted-foreground">{fmtDate(c.call_date)}</span>
+                      <ChevronDown className={`size-3.5 text-muted-foreground transition-transform ${collapsedLogs.has(c.id) ? "-rotate-90" : ""}`} />
+                    </span>
+                  </button>
+                  {!collapsedLogs.has(c.id) && (c.notes || c.follow_up_date) && (
+                    <div className="px-5 pb-3 space-y-1">
+                      {c.notes && <p className="text-xs text-muted-foreground">{c.notes}</p>}
+                      {c.follow_up_date && (
+                        <p className="text-xs text-warning">Follow up: {fmtDate(c.follow_up_date)}</p>
+                      )}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 
