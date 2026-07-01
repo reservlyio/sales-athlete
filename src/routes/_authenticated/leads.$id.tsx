@@ -144,7 +144,7 @@ function LeadDetail() {
       <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} />
 
       {/* Activity strip — timeline style */}
-      <div className="bg-card border border-border rounded-xl px-5 py-5 mt-6 mb-4 space-y-5">
+      <div className="bg-card border border-border rounded-xl px-5 py-5 mt-8 mb-5 space-y-5">
         {/* Chips row */}
         <div className="flex items-center gap-2">
           <button
@@ -194,7 +194,7 @@ function LeadDetail() {
       </div>
 
       {/* Notes with AI date detection */}
-      <div className="mb-4">
+      <div className="mb-5">
         <NotesEditor lead={lead} onSaved={() => qc.invalidateQueries({ queryKey: ["lead", id] })} />
       </div>
 
