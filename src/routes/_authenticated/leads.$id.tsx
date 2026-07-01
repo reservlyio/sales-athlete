@@ -8,7 +8,7 @@ import { CALL_RESULTS, OBJECTION_SOURCES, DEAL_STAGES, STAGE_COLOR, STAGE_LABEL,
 import { parseFollowUpDate } from "@/lib/ai.functions";
 import { parseFollowUpRegex } from "@/lib/follow-up-parser";
 import { toast } from "sonner";
-import { ArrowLeft, Phone, Mail, Globe, MapPin, Sparkles, X, Trash2, CalendarIcon, ChevronDown } from "lucide-react";
+import { ArrowLeft, Phone, Mail, Globe, MapPin, Sparkles, X, Trash2, CalendarIcon, ChevronDown, Clock, AlertCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
