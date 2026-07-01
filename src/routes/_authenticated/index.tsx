@@ -179,7 +179,6 @@ function Dashboard() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
             <h2 className="font-semibold">Follow up today</h2>
-            <p className="text-xs text-muted-foreground">First priority. Hit these before fresh leads.</p>
           </div>
           <span className="stat-num text-sm bg-warning/20 text-warning px-2 py-0.5 rounded-md font-semibold">
             {followupsQ.data?.length ?? 0}
