@@ -144,45 +144,38 @@ function LeadDetail() {
       <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} />
 
       {/* Activity strip */}
-      <div className="bg-card border border-border rounded-xl px-3 py-2.5 mb-4 flex items-center gap-2 flex-wrap">
-        <button
-          type="button"
-          onClick={async () => {
-            if (!lead.called) { updateLead.mutate({ called: true, last_contact_date: todayISO() }); return; }
-            const { error: delErr } = await supabase.from("call_logs").delete().eq("lead_id", id);
-            if (delErr) { toast.error(delErr.message); return; }
-            updateLead.mutate({ called: false, last_contact_date: null, last_call_result: null, deal_stage: lead.email_sent ? "contacted" : "new_lead", next_follow_up: null, follow_up_source: null });
-            qc.invalidateQueries({ queryKey: ["lead-logs", id] });
-            qc.invalidateQueries({ queryKey: ["leads-list"] });
-            toast.success("Moved back to All Leads");
-          }}
-          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
-            lead.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <span className={`size-2 rounded-full shrink-0 ${lead.called ? "bg-emerald-500" : "bg-muted-foreground/40"}`} /> Called
-        </button>
-        <button
-          type="button"
-          onClick={() => updateLead.mutate({ email_sent: !lead.email_sent })}
-          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
-            lead.email_sent ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <span className={`size-2 rounded-full shrink-0 ${lead.email_sent ? "bg-blue-400" : "bg-muted-foreground/40"}`} /> Email sent
-        </button>
-
-        <div className="w-px h-5 bg-border mx-1 shrink-0" />
-
-        <div className="flex gap-4 text-xs">
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground leading-none mb-0.5">Last contact</div>
-            <div className="font-semibold stat-num">{fmtDate(lead.last_contact_date)}</div>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground leading-none mb-0.5">Next follow-up</div>
-            <div className="font-semibold stat-num">{fmtDate(lead.next_follow_up)}</div>
-          </div>
+      <div className="mb-4 space-y-2.5">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!lead.called) { updateLead.mutate({ called: true, last_contact_date: todayISO() }); return; }
+              const { error: delErr } = await supabase.from("call_logs").delete().eq("lead_id", id);
+              if (delErr) { toast.error(delErr.message); return; }
+              updateLead.mutate({ called: false, last_contact_date: null, last_call_result: null, deal_stage: lead.email_sent ? "contacted" : "new_lead", next_follow_up: null, follow_up_source: null });
+              qc.invalidateQueries({ queryKey: ["lead-logs", id] });
+              qc.invalidateQueries({ queryKey: ["leads-list"] });
+              toast.success("Moved back to All Leads");
+            }}
+            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+              lead.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span className={`size-2 rounded-full shrink-0 ${lead.called ? "bg-emerald-500" : "bg-muted-foreground/40"}`} /> Called
+          </button>
+          <button
+            type="button"
+            onClick={() => updateLead.mutate({ email_sent: !lead.email_sent })}
+            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+              lead.email_sent ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span className={`size-2 rounded-full shrink-0 ${lead.email_sent ? "bg-blue-400" : "bg-muted-foreground/40"}`} /> Email sent
+          </button>
+        </div>
+        <div className="flex gap-5 text-sm px-0.5">
+          <span className="text-muted-foreground">Last contact <span className="text-foreground font-medium stat-num">{fmtDate(lead.last_contact_date)}</span></span>
+          <span className="text-muted-foreground">Next follow-up <span className="text-foreground font-medium stat-num">{fmtDate(lead.next_follow_up)}</span></span>
         </div>
       </div>
 
