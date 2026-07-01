@@ -175,10 +175,8 @@ function LeadDetail() {
           </button>
         </div>
 
-        <div className="border-t border-border" />
-
         {/* Timeline bar */}
-        <div className="flex items-center gap-3">
+        <div className="bg-card border border-border rounded-xl px-5 py-4 flex items-center gap-3">
           <div className="text-left shrink-0">
             <div className="font-semibold text-sm stat-num">{fmtDate(lead.last_contact_date)}</div>
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Last contact</div>
