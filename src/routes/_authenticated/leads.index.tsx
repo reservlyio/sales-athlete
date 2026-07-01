@@ -198,7 +198,7 @@ function LeadsPage() {
         </div>
       </header>
 
-      <div className="flex gap-0.5 mb-4 bg-muted rounded-full p-1 overflow-x-auto">
+      <div className="flex gap-0.5 mb-4 bg-muted rounded-full px-2 py-1 overflow-x-auto">
         {TABS.map((t) => (
           <button
             key={t.id}
