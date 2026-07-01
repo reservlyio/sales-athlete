@@ -5,8 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { CALL_RESULTS, OBJECTION_SOURCES, todayISO, fmtDate } from "@/lib/crm";
 import { parseFollowUpDate } from "@/lib/ai.functions";
 import { parseFollowUpRegex } from "@/lib/follow-up-parser";
-import { Phone, X, Sparkles, Copy, Check } from "lucide-react";
+import { Phone, X, Sparkles, Copy, Check, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 export type CallSheetLead = {
   id: string;
@@ -30,7 +32,7 @@ export function CallLogSheet({
   const [notes, setNotes] = useState("");
   const [followUp, setFollowUp] = useState("");
   const [copied, setCopied] = useState(false);
-  const [showCustomDate, setShowCustomDate] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const parser = useServerFn(parseFollowUpDate);
   const [parseHint, setParseHint] = useState<{ date: string; snippet: string | null } | null>(null);
 
@@ -257,7 +259,7 @@ export function CallLogSheet({
                     type="button"
                     onClick={() => {
                       setFollowUp(followUp === date ? "" : date);
-                      setShowCustomDate(false);
+                      setCalendarOpen(false);
                     }}
                     className={`text-xs py-1.5 px-3 rounded-full border font-medium transition-colors ${
                       followUp === date
@@ -269,32 +271,40 @@ export function CallLogSheet({
                   </button>
                 );
               })}
-              <button
-                type="button"
-                onClick={() => setShowCustomDate((v) => !v)}
-                className={`text-xs py-1.5 px-3 rounded-full border font-medium transition-colors ${
-                  showCustomDate
-                    ? "bg-muted border-primary text-primary"
-                    : "bg-muted/30 border-border text-foreground hover:border-primary/50"
-                }`}
-              >
-                Custom date
-              </button>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={`text-xs py-1.5 px-3 rounded-full border font-medium transition-colors inline-flex items-center gap-1 ${
+                      calendarOpen
+                        ? "bg-muted border-primary text-primary"
+                        : "bg-muted/30 border-border text-foreground hover:border-primary/50"
+                    }`}
+                  >
+                    <CalendarIcon className="size-3" />
+                    Custom date
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={followUp ? new Date(followUp + "T00:00:00") : undefined}
+                    onSelect={(date) => {
+                      setFollowUp(date ? date.toISOString().split("T")[0] : "");
+                      setCalendarOpen(false);
+                    }}
+                    disabled={{ before: new Date(todayISO() + "T00:00:00") }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-            {showCustomDate && (
-              <input
-                type="date"
-                value={followUp}
-                onChange={(e) => setFollowUp(e.target.value)}
-                className="mt-2 w-full bg-muted/30 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
-              />
-            )}
             {followUp && (
               <div className="mt-2 flex items-center gap-2 text-xs bg-warning/10 text-warning rounded-md px-2 py-1.5 border border-warning/30">
                 Follow-up set for <strong>{fmtDate(followUp)}</strong>
                 <button
                   type="button"
-                  onClick={() => { setFollowUp(""); setShowCustomDate(false); }}
+                  onClick={() => { setFollowUp(""); setCalendarOpen(false); }}
                   className="ml-auto opacity-60 hover:opacity-100"
                 >
                   <X className="size-3" />
