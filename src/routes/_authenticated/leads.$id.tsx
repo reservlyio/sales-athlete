@@ -144,8 +144,8 @@ function LeadDetail() {
       <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} />
 
       {/* Activity strip */}
-      <div className="mb-4 space-y-2.5">
-        <div className="flex items-center gap-2">
+      <div className="bg-card border border-border rounded-xl px-5 py-4 mb-4 flex items-center gap-4">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={async () => {
@@ -173,9 +173,18 @@ function LeadDetail() {
             <span className={`size-2 rounded-full shrink-0 ${lead.email_sent ? "bg-blue-400" : "bg-muted-foreground/40"}`} /> Email sent
           </button>
         </div>
-        <div className="flex gap-5 text-sm px-0.5">
-          <span className="text-muted-foreground">Last contact <span className="text-foreground font-medium stat-num">{fmtDate(lead.last_contact_date)}</span></span>
-          <span className="text-muted-foreground">Next follow-up <span className="text-foreground font-medium stat-num">{fmtDate(lead.next_follow_up)}</span></span>
+
+        <div className="w-px self-stretch bg-border shrink-0" />
+
+        <div className="flex gap-6 text-sm min-w-0">
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Last contact</div>
+            <div className="font-semibold stat-num">{fmtDate(lead.last_contact_date)}</div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Next follow-up</div>
+            <div className="font-semibold stat-num">{fmtDate(lead.next_follow_up)}</div>
+          </div>
         </div>
       </div>
 
