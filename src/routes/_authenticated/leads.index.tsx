@@ -309,11 +309,11 @@ function LeadsPage() {
                             toast.success(`${l.company} moved back to All Leads`);
                           }}
                           title={l.called ? "Click to log another call · Double-click to undo" : "Log a call"}
-                          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors select-none ${
-                            l.called ? "bg-emerald-500/15 text-emerald-500" : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all select-none ${
+                            l.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
                           }`}
                         >
-                          <span className="size-2 rounded-full bg-current shrink-0" /> Called
+                          <span className={`size-2 rounded-full shrink-0 ${l.called ? "bg-emerald-500" : "bg-muted-foreground/40"}`} /> Called
                         </button>
                         <button
                           onClick={(e) => {
@@ -326,11 +326,11 @@ function LeadsPage() {
                               },
                             });
                           }}
-                          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${
-                            l.email_sent ? "bg-blue-500/15 text-blue-400" : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+                            l.email_sent ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
                           }`}
                         >
-                          <span className="size-2 rounded-full bg-current shrink-0" /> Emailed
+                          <span className={`size-2 rounded-full shrink-0 ${l.email_sent ? "bg-blue-400" : "bg-muted-foreground/40"}`} /> Emailed
                         </button>
                       </div>
                     </li>
