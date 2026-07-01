@@ -30,6 +30,7 @@ export function CallLogSheet({
   const [notes, setNotes] = useState("");
   const [followUp, setFollowUp] = useState("");
   const [copied, setCopied] = useState(false);
+  const [showCustomDate, setShowCustomDate] = useState(false);
   const parser = useServerFn(parseFollowUpDate);
   const [parseHint, setParseHint] = useState<{ date: string; snippet: string | null } | null>(null);
 
@@ -64,6 +65,12 @@ export function CallLogSheet({
       document.body.style.overflow = "";
     };
   }, [onClose]);
+
+  const addDays = (iso: string, n: number) => {
+    const d = new Date(iso + "T00:00:00");
+    d.setDate(d.getDate() + n);
+    return d.toISOString().split("T")[0];
+  };
 
   const copyPhone = async () => {
     if (!lead.phone) return;
@@ -226,6 +233,70 @@ export function CallLogSheet({
                 <Sparkles className="size-3" />
                 Follow-up <strong>{fmtDate(parseHint.date)}</strong>
                 <button type="button" onClick={() => { setFollowUp(""); setParseHint(null); }} className="ml-auto opacity-60 hover:opacity-100">
+                  <X className="size-3" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+              Follow-up (optional)
+            </label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {[
+                { label: "Tomorrow", days: 1 },
+                { label: "In 3 days", days: 3 },
+                { label: "Next week", days: 7 },
+                { label: "In 2 weeks", days: 14 },
+              ].map(({ label, days }) => {
+                const date = addDays(todayISO(), days);
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => {
+                      setFollowUp(followUp === date ? "" : date);
+                      setShowCustomDate(false);
+                    }}
+                    className={`text-xs py-1.5 px-3 rounded-full border font-medium transition-colors ${
+                      followUp === date
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/30 border-border text-foreground hover:border-primary/50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setShowCustomDate((v) => !v)}
+                className={`text-xs py-1.5 px-3 rounded-full border font-medium transition-colors ${
+                  showCustomDate
+                    ? "bg-muted border-primary text-primary"
+                    : "bg-muted/30 border-border text-foreground hover:border-primary/50"
+                }`}
+              >
+                Custom date
+              </button>
+            </div>
+            {showCustomDate && (
+              <input
+                type="date"
+                value={followUp}
+                onChange={(e) => setFollowUp(e.target.value)}
+                className="mt-2 w-full bg-muted/30 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+              />
+            )}
+            {followUp && (
+              <div className="mt-2 flex items-center gap-2 text-xs bg-warning/10 text-warning rounded-md px-2 py-1.5 border border-warning/30">
+                Follow-up set for <strong>{fmtDate(followUp)}</strong>
+                <button
+                  type="button"
+                  onClick={() => { setFollowUp(""); setShowCustomDate(false); }}
+                  className="ml-auto opacity-60 hover:opacity-100"
+                >
                   <X className="size-3" />
                 </button>
               </div>
