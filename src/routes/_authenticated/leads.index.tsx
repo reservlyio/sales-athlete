@@ -299,7 +299,7 @@ function LeadsPage() {
                       </Link>
                       <div className="flex gap-1.5 shrink-0">
                         <button
-                          onClick={(e) => { e.preventDefault(); nav({ to: "/leads/$id", params: { id: l.id }, search: { logCall: "true" } }); }}
+                          onClick={(e) => { e.preventDefault(); nav({ to: "/leads/$id", params: { id: l.id }, search: { logCall: "1" } }); }}
                           onDoubleClick={(e) => {
                             e.preventDefault();
                             if (!l.called) return;

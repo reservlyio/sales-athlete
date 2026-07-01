@@ -14,7 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 
 export const Route = createFileRoute("/_authenticated/leads/$id")({
   validateSearch: (search: Record<string, unknown>) => ({
-    logCall: search.logCall === "true",
+    logCall: search.logCall === "1",
   }),
   head: () => ({ meta: [{ title: "Lead" }] }),
   component: LeadDetail,
@@ -47,6 +47,12 @@ function LeadDetail() {
   const { logCall } = Route.useSearch();
   const qc = useQueryClient();
   const nav = useNavigate();
+
+  useEffect(() => {
+    if (logCall) {
+      nav({ to: "/leads/$id", params: { id }, search: {}, replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const leadQ = useQuery({
     queryKey: ["lead", id],
