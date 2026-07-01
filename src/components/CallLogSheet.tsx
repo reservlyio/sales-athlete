@@ -162,7 +162,7 @@ export function CallLogSheet({
         </div>
 
         {/* Scrollable body */}
-        <div className="px-6 py-5 overflow-y-auto flex-1 space-y-6">
+        <div className="px-6 py-5 overflow-y-auto flex-1 space-y-7">
           <div>
             <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Call result</label>
             <div className="mt-3 space-y-2">
@@ -172,7 +172,7 @@ export function CallLogSheet({
                   key={r}
                   type="button"
                   onClick={() => { setResult(r); if (r !== "Objection/Not Interested") setObjectionSource(null); }}
-                  className={`text-xs py-3 px-2 rounded-full border font-medium transition-colors leading-tight ${
+                  className={`text-xs py-4 px-2 rounded-full border font-medium transition-colors leading-tight ${
                     result === r
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-muted/30 border-border text-foreground hover:border-primary/50"
@@ -185,7 +185,7 @@ export function CallLogSheet({
               <button
                 type="button"
                 onClick={() => setResult("Meeting Booked")}
-                className={`w-full text-sm py-3 px-4 rounded-full border font-semibold transition-colors ${
+                className={`w-full text-sm py-4 px-4 rounded-full border font-semibold transition-colors ${
                   result === "Meeting Booked"
                     ? "bg-success text-white border-success"
                     : "bg-success/10 border-success/40 text-success hover:bg-success/20 hover:border-success/60"
