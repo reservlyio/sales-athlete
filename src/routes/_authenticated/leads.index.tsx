@@ -1,9 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
-import { CallLogInline } from "@/components/CallLogInline";
 import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { importFromNotion } from "@/lib/notion-import.functions";
 import { analyzeObjections } from "@/lib/analytics.functions";
@@ -44,10 +43,10 @@ const TABS: { id: Tab; label: string }[] = [
 
 function LeadsPage() {
   const qc = useQueryClient();
+  const nav = useNavigate();
   const [tab, setTab] = useState<Tab>("all");
   const [limit, setLimit] = useState(50);
   const [search, setSearch] = useState("");
-  const [callLeadId, setCallLeadId] = useState<string | null>(null);
 
   const totalQ = useQuery({
     queryKey: ["leads-total"],
@@ -270,7 +269,6 @@ function LeadsPage() {
                     else fuBadge = { color: "bg-primary/15 text-primary", label: `Follow up ${fmtDate(fu)}` };
                   }
                   const showFuBadge = fuBadge && (tab === "all" || tab === "followups");
-                  const isOpen = callLeadId === l.id;
                   return (
                     <li key={l.id}>
                       <div className="flex items-center gap-2 px-3 py-2.5 hover:bg-accent/30">
@@ -300,21 +298,10 @@ function LeadsPage() {
                         </Link>
                         <div className="flex gap-1.5 shrink-0">
                           <button
-                            onClick={(e) => { e.preventDefault(); setCallLeadId(isOpen ? null : l.id); }}
-                            onDoubleClick={(e) => {
-                              e.preventDefault();
-                              if (!l.called) return;
-                              quickToggle.mutate({
-                                id: l.id,
-                                patch: { called: false, deal_stage: "new_lead", last_call_result: null, last_contact_date: null } as never,
-                              });
-                              toast.success(`${l.company} moved back to All Leads`);
-                            }}
-                            title={l.called ? "Click to log another call · Double-click to undo" : "Log a call"}
+                            onClick={(e) => { e.preventDefault(); nav({ to: "/leads/$id", params: { id: l.id }, search: { logCall: "1" } }); }}
+                            title="Go to lead and log a call"
                             className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all select-none ${
-                              isOpen
-                                ? "bg-primary/15 border-primary/50 text-primary"
-                                : l.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
+                              l.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
                             }`}
                           >
                             <span className={`size-2 rounded-full shrink-0 ${l.called ? "bg-emerald-500" : "bg-muted-foreground/40"}`} /> Called
@@ -338,17 +325,6 @@ function LeadsPage() {
                           </button>
                         </div>
                       </div>
-                      {isOpen && (
-                        <CallLogInline
-                          lead={l}
-                          onClose={() => setCallLeadId(null)}
-                          onLogged={() => {
-                            qc.invalidateQueries({ queryKey: ["leads-list"] });
-                            qc.invalidateQueries({ queryKey: ["leads-total"] });
-                            qc.invalidateQueries({ queryKey: ["leads-due-count"] });
-                          }}
-                        />
-                      )}
                     </li>
                   );
                 })}

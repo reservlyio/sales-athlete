@@ -14,6 +14,9 @@ import { Calendar } from "@/components/ui/calendar";
 
 export const Route = createFileRoute("/_authenticated/leads/$id")({
   head: () => ({ meta: [{ title: "Lead" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    logCall: search.logCall === "1" ? "1" as const : undefined,
+  }),
   component: LeadDetail,
 });
 
@@ -41,15 +44,14 @@ type CallLog = { id: string; call_date: string; result: string; notes: string | 
 
 function LeadDetail() {
   const { id } = Route.useParams();
+  const { logCall } = Route.useSearch();
   const qc = useQueryClient();
   const nav = useNavigate();
 
-  // Capture logCall from raw URL before any router re-render can wipe it
-  const shouldAutoOpen = useRef(new URLSearchParams(window.location.search).get("logCall") === "1");
+  const shouldAutoOpen = useRef(logCall === "1");
 
   useEffect(() => {
     if (shouldAutoOpen.current) {
-      // Strip param from URL without router navigation (avoids remount)
       const url = new URL(window.location.href);
       url.searchParams.delete("logCall");
       window.history.replaceState(null, "", url.toString());
