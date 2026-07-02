@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
-import { CallLogSheet } from "@/components/CallLogSheet";
+import { CallLogInline } from "@/components/CallLogInline";
 import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { importFromNotion } from "@/lib/notion-import.functions";
 import { analyzeObjections } from "@/lib/analytics.functions";
@@ -47,7 +47,7 @@ function LeadsPage() {
   const [tab, setTab] = useState<Tab>("all");
   const [limit, setLimit] = useState(50);
   const [search, setSearch] = useState("");
-  const [callSheet, setCallSheet] = useState<Lead | null>(null);
+  const [callLeadId, setCallLeadId] = useState<string | null>(null);
 
   const totalQ = useQuery({
     queryKey: ["leads-total"],
@@ -270,69 +270,85 @@ function LeadsPage() {
                     else fuBadge = { color: "bg-primary/15 text-primary", label: `Follow up ${fmtDate(fu)}` };
                   }
                   const showFuBadge = fuBadge && (tab === "all" || tab === "followups");
+                  const isOpen = callLeadId === l.id;
                   return (
-                    <li key={l.id} className="flex items-center gap-2 px-3 py-2.5 hover:bg-accent/30">
-                      <Link to="/leads/$id" params={{ id: l.id }} className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium truncate">{l.company}</span>
-                          {(() => {
-                            const effectiveStage =
-                              l.deal_stage === "contacted" && !l.email_sent
-                                ? (l.called ? "called_only" : "new_lead")
-                                : l.deal_stage;
-                            const label = effectiveStage === "called_only" ? "Called" : (STAGE_LABEL[effectiveStage] ?? effectiveStage);
-                            const color = effectiveStage === "called_only" ? "bg-accent text-accent-foreground" : (STAGE_COLOR[effectiveStage] || "");
-                            return (
-                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${color}`}>{label}</span>
-                            );
-                          })()}
-                          {showFuBadge && fuBadge && (
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${fuBadge.color}`}>
-                              <CalendarClock className="size-3" /> {fuBadge.label}
-                            </span>
-                          )}
+                    <li key={l.id}>
+                      <div className="flex items-center gap-2 px-3 py-2.5 hover:bg-accent/30">
+                        <Link to="/leads/$id" params={{ id: l.id }} className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium truncate">{l.company}</span>
+                            {(() => {
+                              const effectiveStage =
+                                l.deal_stage === "contacted" && !l.email_sent
+                                  ? (l.called ? "called_only" : "new_lead")
+                                  : l.deal_stage;
+                              const label = effectiveStage === "called_only" ? "Called" : (STAGE_LABEL[effectiveStage] ?? effectiveStage);
+                              const color = effectiveStage === "called_only" ? "bg-accent text-accent-foreground" : (STAGE_COLOR[effectiveStage] || "");
+                              return (
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${color}`}>{label}</span>
+                              );
+                            })()}
+                            {showFuBadge && fuBadge && (
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${fuBadge.color}`}>
+                                <CalendarClock className="size-3" /> {fuBadge.label}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate stat-num mt-0.5">
+                            {[l.contact_name, l.phone, l.location].filter(Boolean).join(" · ")}
+                          </div>
+                        </Link>
+                        <div className="flex gap-1.5 shrink-0">
+                          <button
+                            onClick={(e) => { e.preventDefault(); setCallLeadId(isOpen ? null : l.id); }}
+                            onDoubleClick={(e) => {
+                              e.preventDefault();
+                              if (!l.called) return;
+                              quickToggle.mutate({
+                                id: l.id,
+                                patch: { called: false, deal_stage: "new_lead", last_call_result: null, last_contact_date: null } as never,
+                              });
+                              toast.success(`${l.company} moved back to All Leads`);
+                            }}
+                            title={l.called ? "Click to log another call · Double-click to undo" : "Log a call"}
+                            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all select-none ${
+                              isOpen
+                                ? "bg-primary/15 border-primary/50 text-primary"
+                                : l.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            <span className={`size-2 rounded-full shrink-0 ${l.called ? "bg-emerald-500" : "bg-muted-foreground/40"}`} /> Called
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              quickToggle.mutate({
+                                id: l.id,
+                                patch: {
+                                  email_sent: !l.email_sent,
+                                  deal_stage: !l.email_sent && l.deal_stage === "new_lead" ? "contacted" : l.deal_stage,
+                                },
+                              });
+                            }}
+                            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+                              l.email_sent ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            <span className={`size-2 rounded-full shrink-0 ${l.email_sent ? "bg-blue-400" : "bg-muted-foreground/40"}`} /> Emailed
+                          </button>
                         </div>
-                        <div className="text-xs text-muted-foreground truncate stat-num mt-0.5">
-                          {[l.contact_name, l.phone, l.location].filter(Boolean).join(" · ")}
-                        </div>
-                      </Link>
-                      <div className="flex gap-1.5 shrink-0">
-                        <button
-                          onClick={(e) => { e.preventDefault(); setCallSheet(l); }}
-                          onDoubleClick={(e) => {
-                            e.preventDefault();
-                            if (!l.called) return;
-                            quickToggle.mutate({
-                              id: l.id,
-                              patch: { called: false, deal_stage: "new_lead", last_call_result: null, last_contact_date: null } as never,
-                            });
-                            toast.success(`${l.company} moved back to All Leads`);
-                          }}
-                          title={l.called ? "Click to log another call · Double-click to undo" : "Log a call"}
-                          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all select-none ${
-                            l.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <span className={`size-2 rounded-full shrink-0 ${l.called ? "bg-emerald-500" : "bg-muted-foreground/40"}`} /> Called
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            quickToggle.mutate({
-                              id: l.id,
-                              patch: {
-                                email_sent: !l.email_sent,
-                                deal_stage: !l.email_sent && l.deal_stage === "new_lead" ? "contacted" : l.deal_stage,
-                              },
-                            });
-                          }}
-                          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
-                            l.email_sent ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <span className={`size-2 rounded-full shrink-0 ${l.email_sent ? "bg-blue-400" : "bg-muted-foreground/40"}`} /> Emailed
-                        </button>
                       </div>
+                      {isOpen && (
+                        <CallLogInline
+                          lead={l}
+                          onClose={() => setCallLeadId(null)}
+                          onLogged={() => {
+                            qc.invalidateQueries({ queryKey: ["leads-list"] });
+                            qc.invalidateQueries({ queryKey: ["leads-total"] });
+                            qc.invalidateQueries({ queryKey: ["leads-due-count"] });
+                          }}
+                        />
+                      )}
                     </li>
                   );
                 })}
@@ -340,17 +356,6 @@ function LeadsPage() {
             )}
           </div>
         </>
-      )}
-      {callSheet && (
-        <CallLogSheet
-          lead={callSheet}
-          onClose={() => setCallSheet(null)}
-          onLogged={() => {
-            qc.invalidateQueries({ queryKey: ["leads-list"] });
-            qc.invalidateQueries({ queryKey: ["leads-total"] });
-            qc.invalidateQueries({ queryKey: ["leads-due-count"] });
-          }}
-        />
       )}
     </AppShell>
   );
