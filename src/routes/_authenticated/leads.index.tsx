@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +44,6 @@ const TABS: { id: Tab; label: string }[] = [
 
 function LeadsPage() {
   const qc = useQueryClient();
-  const nav = useNavigate();
   const [tab, setTab] = useState<Tab>("all");
   const [limit, setLimit] = useState(50);
   const [search, setSearch] = useState("");
@@ -299,7 +298,7 @@ function LeadsPage() {
                       </Link>
                       <div className="flex gap-1.5 shrink-0">
                         <button
-                          onClick={(e) => { e.preventDefault(); nav({ to: "/leads/$id", params: { id: l.id }, search: { logCall: "1" } }); }}
+                          onClick={(e) => { e.preventDefault(); setCallSheet(l); }}
                           onDoubleClick={(e) => {
                             e.preventDefault();
                             if (!l.called) return;
