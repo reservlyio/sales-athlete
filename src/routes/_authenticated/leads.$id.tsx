@@ -172,20 +172,20 @@ function LeadDetail() {
               qc.invalidateQueries({ queryKey: ["leads-list"] });
               toast.success("Moved back to All Leads");
             }}
-            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+            className={`inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full border transition-all ${
               lead.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <span className={`size-2 rounded-full shrink-0 ${lead.called ? "bg-emerald-500" : "bg-muted-foreground/40"}`} /> Called
+            <span className={`size-2.5 rounded-full shrink-0 ${lead.called ? "bg-emerald-500" : "bg-muted-foreground/40"}`} /> Called
           </button>
           <button
             type="button"
             onClick={() => updateLead.mutate({ email_sent: !lead.email_sent })}
-            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+            className={`inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full border transition-all ${
               lead.email_sent ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <span className={`size-2 rounded-full shrink-0 ${lead.email_sent ? "bg-blue-400" : "bg-muted-foreground/40"}`} /> Email sent
+            <span className={`size-2.5 rounded-full shrink-0 ${lead.email_sent ? "bg-blue-400" : "bg-muted-foreground/40"}`} /> Email sent
           </button>
         </div>
 
@@ -270,7 +270,7 @@ function LeadDetail() {
 
 function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () => void; autoOpen?: boolean }) {
   const [open, setOpen] = useState(autoOpen ?? false);
-  const [result, setResult] = useState<string>("No Answer");
+  const [result, setResult] = useState<string>("");
   const [objectionSource, setObjectionSource] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [followUp, setFollowUp] = useState("");
@@ -335,7 +335,7 @@ function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () =
     },
     onSuccess: () => {
       toast.success("Call logged");
-      setNotes(""); setFollowUp(""); setParseHint(null); setResult("No Answer"); setObjectionSource(null); setOpen(false);
+      setNotes(""); setFollowUp(""); setParseHint(null); setResult(""); setObjectionSource(null); setOpen(false);
       onLogged();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -353,63 +353,63 @@ function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () =
   }
 
   return (
-    <section className="bg-card border-2 border-primary rounded-xl p-5 mb-4 space-y-3">
+    <section className="bg-card border-2 border-primary rounded-xl p-5 mb-4 space-y-7">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">Log call</h3>
         <button onClick={() => setOpen(false)} className="text-muted-foreground"><X className="size-4" /></button>
       </div>
       <div>
-        <label className="text-xs text-muted-foreground">Result</label>
-        <div className="space-y-1.5 mt-1">
-          <div className="grid grid-cols-2 gap-1.5">
+        <label className="text-xs font-semibold text-muted-foreground">Result</label>
+        <div className="space-y-2.5 mt-1">
+          <div className="grid grid-cols-2 gap-2.5">
             {CALL_RESULTS.slice(0, -1).map((r) => (
               <button
                 key={r}
                 type="button"
                 onClick={() => { setResult(r); if (r !== "Objection/Not Interested") setObjectionSource(null); }}
-                className={`text-xs py-2.5 px-2 rounded-md border leading-tight ${
-                  result === r ? "bg-primary text-primary-foreground border-primary" : "bg-input border-border"
+                className={`text-xs py-4 px-3 rounded-2xl border font-medium leading-normal transition-all ${
+                  result === r ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 border-border text-foreground/80 hover:text-foreground hover:bg-muted"
                 }`}
               >
                 {r}
               </button>
             ))}
           </div>
+          {result === "Objection/Not Interested" && (
+            <div>
+              <label className="text-xs text-muted-foreground">Came from</label>
+              <div className="grid grid-cols-2 gap-1.5 mt-1">
+                {OBJECTION_SOURCES.map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() => setObjectionSource(s.value)}
+                    className={`text-xs py-3 px-3 rounded-2xl border font-medium transition-all ${
+                      objectionSource === s.value ? "bg-primary text-primary-foreground border-primary" : "bg-muted/50 border-border text-foreground/80 hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <button
             type="button"
             onClick={() => setResult("Meeting Booked")}
-            className={`w-full text-xs py-2.5 px-2 rounded-md border font-semibold ${
+            className={`w-full text-xs py-4 px-4 rounded-2xl border font-medium transition-all ${
               result === "Meeting Booked"
                 ? "bg-success text-white border-success"
-                : "bg-success/10 border-success/40 text-success hover:bg-success/20"
+                : "bg-success/10 border-success/40 text-success/80 hover:text-success hover:bg-success/20"
             }`}
           >
             Meeting Booked
           </button>
         </div>
-        {result === "Objection/Not Interested" && (
-          <div className="mt-1.5">
-            <label className="text-xs text-muted-foreground">Came from</label>
-            <div className="grid grid-cols-2 gap-1.5 mt-1">
-              {OBJECTION_SOURCES.map((s) => (
-                <button
-                  key={s.value}
-                  type="button"
-                  onClick={() => setObjectionSource(s.value)}
-                  className={`text-xs py-2 px-2 rounded-md border ${
-                    objectionSource === s.value ? "bg-primary text-primary-foreground border-primary" : "bg-input border-border"
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
       <div>
-        <label className="text-xs text-muted-foreground flex items-center gap-1">
-          Notes <Sparkles className="size-3 text-primary" /> <span className="text-[10px]">AI auto-detects follow-up dates</span>
+        <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+          Notes <Sparkles className="size-3 text-primary" />
         </label>
         <textarea
           value={notes}
@@ -430,18 +430,22 @@ function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () =
         )}
       </div>
       <div>
-        <label className="text-xs text-muted-foreground">Follow-up date (optional)</label>
-        <div className="mt-1 flex items-center gap-2">
+        <label className="text-xs font-semibold text-muted-foreground">Follow-up date (optional)</label>
+        <div className="mt-2 flex items-center gap-2">
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
               <button
                 type="button"
-                className="inline-flex items-center gap-2 text-sm bg-input border border-border rounded-md px-3 py-2 text-left w-full hover:border-primary/60 focus:outline-none focus:border-primary transition-colors"
+                className={`text-sm py-2.5 px-5 rounded-full border font-medium transition-colors inline-flex items-center gap-2 ${
+                  calendarOpen
+                    ? "bg-muted border-primary text-primary"
+                    : followUp
+                    ? "bg-primary/10 border-primary/40 text-primary"
+                    : "bg-muted/30 border-border text-foreground hover:border-primary/50"
+                }`}
               >
-                <CalendarIcon className="size-4 text-muted-foreground shrink-0" />
-                <span className={followUp ? "text-foreground" : "text-muted-foreground"}>
-                  {followUp ? fmtDate(followUp) : "Pick a date…"}
-                </span>
+                <CalendarIcon className="size-4" />
+                {followUp ? fmtDate(followUp) : "Select a date"}
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -466,8 +470,8 @@ function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () =
       </div>
       <button
         onClick={() => log.mutate()}
-        disabled={log.isPending || (result === "Objection/Not Interested" && !objectionSource)}
-        className="w-full bg-primary text-primary-foreground rounded-md py-2.5 font-semibold disabled:opacity-50"
+        disabled={log.isPending || !result || (result === "Objection/Not Interested" && !objectionSource)}
+        className="w-full bg-primary text-primary-foreground rounded-full py-3 font-bold disabled:opacity-50"
       >
         {log.isPending ? "Saving…" : "Save call"}
       </button>
