@@ -63,11 +63,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             const Icon = l.icon;
             return (
               <Link key={l.to} to={l.to} className="flex-1 flex justify-center">
-                <span className={`inline-flex flex-col items-center gap-0.5 px-4 py-2 rounded-full transition-colors ${
+                <span className={`inline-flex flex-col items-center gap-0.5 px-3 py-2.5 rounded-full transition-colors ${
                   active ? "bg-muted/60 text-primary" : "text-muted-foreground"
                 }`}>
-                  <Icon className="size-4" />
-                  <span className="text-[9px] font-medium">{l.label}</span>
+                  <Icon className="size-5" />
+                  <span className="text-[10px] font-medium">{l.label}</span>
                 </span>
               </Link>
             );
