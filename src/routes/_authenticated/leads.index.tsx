@@ -367,7 +367,7 @@ function AnalyticsView() {
 
   const coachingM = useMutation({
     mutationFn: async (objections: { label: string; count: number }[]) =>
-      runCoaching({ data: { objections, totalCalls: total, transfers, meetings } }),
+      runCoaching({ data: { objections, totalCalls: total, transfers, meetings, voicemails } }),
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -381,6 +381,7 @@ function AnalyticsView() {
     onSuccess: (data) => {
       if (data.objections.length > 0) coachingM.mutate(data.objections);
     },
+
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -394,14 +395,14 @@ function AnalyticsView() {
   const rangeLabel = range === "day" ? "Today" : range === "week" ? "This week" : "This month";
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-1 bg-card rounded-lg p-1 border border-border w-fit">
+    <div className="space-y-6">
+      <div className="flex gap-0.5 bg-muted rounded-full px-2 py-1 w-fit mt-8">
         {(["day", "week", "month"] as Range[]).map((r) => (
           <button
             key={r}
             onClick={() => setRange(r)}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium ${
-              range === r ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+              range === r ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10"
             }`}
           >
             {r === "day" ? "Today" : r === "week" ? "This week" : "This month"}
@@ -440,24 +441,24 @@ function AnalyticsView() {
         ) : total === 0 ? (
           <p className="text-xs text-muted-foreground">No calls logged {rangeLabel.toLowerCase()}.</p>
         ) : (
-          <ul className="space-y-2.5">
+          <ul className="space-y-3">
             {([
-              { label: "No Answer", count: calls.filter((c) => c.result === "No Answer").length, color: "bg-muted-foreground/50" },
-              { label: "Voicemail left", count: voicemails, color: "bg-blue-400" },
-              { label: "Objection — Gatekeeper", count: calls.filter((c) => c.result === "Objection/Not Interested" && c.objection_source === "gatekeeper").length, color: "bg-destructive" },
-              { label: "Objection — Decision Maker", count: calls.filter((c) => c.result === "Objection/Not Interested" && c.objection_source === "decision_maker").length, color: "bg-orange-400" },
-              { label: "Transferred to DM", count: transfers, color: "bg-primary" },
-              { label: "Meeting Booked", count: meetings, color: "bg-success" },
-            ] as { label: string; count: number; color: string }[])
+              { label: "No Answer", count: calls.filter((c) => c.result === "No Answer").length, gradient: "linear-gradient(to right, #6B7280, #94A3B8)" },
+              { label: "Voicemail left", count: voicemails, gradient: "linear-gradient(to right, #8B5CF6, #A78BFA)" },
+              { label: "Objection — Gatekeeper", count: calls.filter((c) => c.result === "Objection/Not Interested" && c.objection_source === "gatekeeper").length, gradient: "linear-gradient(to right, #EF4444, #F97316)" },
+              { label: "Objection — Decision Maker", count: calls.filter((c) => c.result === "Objection/Not Interested" && c.objection_source === "decision_maker").length, gradient: "linear-gradient(to right, #EF4444, #F97316)" },
+              { label: "Transferred to DM", count: transfers, gradient: "linear-gradient(to right, #06B6D4, #14B8A6)" },
+              { label: "Meeting Booked", count: meetings, gradient: "linear-gradient(to right, #22C55E, #10B981)" },
+            ] as { label: string; count: number; gradient: string }[])
               .filter((o) => o.count > 0)
               .map((o) => (
-                <li key={o.label} className="space-y-1">
+                <li key={o.label} className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">{o.label}</span>
                     <span className="stat-num text-xs font-semibold">{o.count}</span>
                   </div>
-                  <div className="bg-muted rounded-full h-1.5">
-                    <div className={`${o.color} h-1.5 rounded-full transition-all`} style={{ width: `${(o.count / total) * 100}%` }} />
+                  <div className="bg-muted rounded-full h-2">
+                    <div className="h-2 rounded-full transition-all" style={{ width: `${(o.count / total) * 100}%`, background: o.gradient }} />
                   </div>
                 </li>
               ))}
@@ -480,10 +481,12 @@ function AnalyticsView() {
         </div>
         {!objectionsM.data ? (
           <p className="text-xs text-muted-foreground">
-            {total} call{total === 1 ? "" : "s"} {rangeLabel.toLowerCase()} — click Analyze to cluster objection patterns with AI.
+            {total} call{total === 1 ? "" : "s"} {rangeLabel.toLowerCase()} — click Analyze to cluster call patterns with AI.
           </p>
+        ) : objectionsM.data.error ? (
+          <p className="text-xs text-destructive">{objectionsM.data.error}</p>
         ) : objectionsM.data.objections.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No clear objections detected.</p>
+          <p className="text-xs text-muted-foreground">No patterns detected — try a wider time range.</p>
         ) : (
           <ul className="space-y-2">
             {objectionsM.data.objections.map((o) => {
@@ -507,20 +510,25 @@ function AnalyticsView() {
       {(coachingM.isPending || coachingM.data) && (
         <section className="bg-card border border-border rounded-xl p-5">
           <h3 className="font-semibold text-sm inline-flex items-center gap-1.5 mb-3">
-            <Sparkles className="size-4 text-primary" /> AI coaching suggestions
+            <Sparkles className="size-4 text-primary" /> AI coach
           </h3>
           {coachingM.isPending ? (
-            <p className="text-xs text-muted-foreground animate-pulse">Generating coaching tips…</p>
+            <p className="text-xs text-muted-foreground animate-pulse">Analyzing your calls…</p>
           ) : coachingM.data?.error ? (
             <p className="text-xs text-destructive">{coachingM.data.error}</p>
           ) : (
-            <div className="space-y-3">
-              {coachingM.data!.coaching.split("\n\n").filter(Boolean).map((tip, i) => (
-                <div key={i} className="flex gap-3">
-                  <span className="mt-0.5 size-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
-                  <p className="text-sm text-foreground/90 leading-relaxed">{tip}</p>
-                </div>
-              ))}
+            <div className="space-y-4">
+              {coachingM.data!.summary && (
+                <p className="text-sm text-muted-foreground leading-relaxed">{coachingM.data!.summary}</p>
+              )}
+              <div className="space-y-3">
+                {coachingM.data!.tips.map((tip, i) => (
+                  <div key={i} className="flex gap-3">
+                    <span className="mt-0.5 size-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                    <p className="text-sm text-foreground/90 leading-relaxed">{tip}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </section>
