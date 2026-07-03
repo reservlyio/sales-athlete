@@ -443,7 +443,7 @@ function AnalyticsView() {
         ) : (
           <ul className="space-y-3">
             {([
-              { label: "No Answer", count: calls.filter((c) => c.result === "No Answer").length, gradient: "linear-gradient(to right, #6B7280, #94A3B8)" },
+              { label: "No Answer", count: calls.filter((c) => c.result === "No Answer").length, gradient: "linear-gradient(to right, #3B82F6, #6366F1)" },
               { label: "Voicemail left", count: voicemails, gradient: "linear-gradient(to right, #8B5CF6, #A78BFA)" },
               { label: "Objection — Gatekeeper", count: calls.filter((c) => c.result === "Objection/Not Interested" && c.objection_source === "gatekeeper").length, gradient: "linear-gradient(to right, #EF4444, #F97316)" },
               { label: "Objection — Decision Maker", count: calls.filter((c) => c.result === "Objection/Not Interested" && c.objection_source === "decision_maker").length, gradient: "linear-gradient(to right, #EF4444, #F97316)" },
