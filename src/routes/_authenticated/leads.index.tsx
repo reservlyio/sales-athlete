@@ -202,7 +202,7 @@ function LeadsPage() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`md:flex-1 whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+            className={`md:flex-1 whitespace-nowrap px-5 py-1.5 rounded-full text-sm font-medium transition-all ${
               tab === t.id
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10"
