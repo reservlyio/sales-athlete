@@ -64,7 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             return (
               <Link key={l.to} to={l.to} className="flex flex-col items-center">
                 <span className={`flex flex-col items-center gap-1 px-5 py-1.5 rounded-full transition-colors ${
-                  active ? "bg-muted/60 text-primary" : "text-muted-foreground"
+                  active ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                 }`}>
                   <Icon className="size-5" />
                   <span className="text-[10px] font-medium">{l.label}</span>
