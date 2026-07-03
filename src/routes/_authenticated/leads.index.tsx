@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { importFromNotion } from "@/lib/notion-import.functions";
-import { analyzeObjections } from "@/lib/analytics.functions";
+import { analyzeObjections, generateCoaching } from "@/lib/analytics.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
@@ -363,12 +363,23 @@ function AnalyticsView() {
   });
 
   const runObjections = useServerFn(analyzeObjections);
+  const runCoaching = useServerFn(generateCoaching);
+
+  const coachingM = useMutation({
+    mutationFn: async (objections: { label: string; count: number }[]) =>
+      runCoaching({ data: { objections, totalCalls: total, transfers, meetings } }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const objectionsM = useMutation({
     mutationFn: async () => {
       const entries = (callsQ.data ?? []).map((c) =>
         [c.result, c.objection_source, c.notes].filter(Boolean).join(" | ")
       ).filter((e) => e.trim().length > 0);
       return runObjections({ data: { entries } });
+    },
+    onSuccess: (data) => {
+      if (data.objections.length > 0) coachingM.mutate(data.objections);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -380,18 +391,6 @@ function AnalyticsView() {
   const meetings = calls.filter((c) => c.result === "Meeting Booked").length;
 
   const agentVoicemails: [string, number][] = [];
-
-  const byDay = new Map<string, number>();
-  for (const c of calls) byDay.set(c.call_date, (byDay.get(c.call_date) ?? 0) + 1);
-  const span = range === "day" ? 1 : range === "week" ? 7 : 30;
-  const days: { date: string; count: number }[] = [];
-  for (let i = span - 1; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    days.push({ date: iso, count: byDay.get(iso) ?? 0 });
-  }
-  const maxDay = Math.max(1, ...days.map((d) => d.count));
   const rangeLabel = range === "day" ? "Today" : range === "week" ? "This week" : "This month";
 
   return (
@@ -467,41 +466,6 @@ function AnalyticsView() {
       </section>
 
       <section className="bg-card border border-border rounded-xl p-5">
-        <h3 className="font-semibold text-sm mb-3">Call volume — {rangeLabel.toLowerCase()}</h3>
-        {callsQ.isLoading ? (
-          <div className="text-sm text-muted-foreground">Loading…</div>
-        ) : range === "day" ? (
-          <div className="text-center py-4">
-            <p className="text-3xl font-bold stat-num text-primary">{total}</p>
-            <p className="text-xs text-muted-foreground mt-1">calls made today · Goal: 100</p>
-            <div className="mt-3 bg-muted rounded-full h-2 w-full">
-              <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${Math.min((total / 100) * 100, 100)}%` }} />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">{Math.round((total / 100) * 100)}% of daily goal</p>
-          </div>
-        ) : (
-          <div className="flex items-end gap-1 h-32">
-            {days.map((d) => (
-              <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-                <div className="flex-1 w-full flex items-end">
-                  <div
-                    className="w-full bg-primary/70 hover:bg-primary rounded-t"
-                    style={{ height: `${(d.count / maxDay) * 100}%`, minHeight: d.count > 0 ? 4 : 0 }}
-                    title={`${d.date}: ${d.count}`}
-                  />
-                </div>
-                {span <= 7 && (
-                  <span className="text-[10px] text-muted-foreground stat-num">
-                    {new Date(d.date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short" })}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="bg-card border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-sm inline-flex items-center gap-1.5">
             <Sparkles className="size-4 text-primary" /> Top objections from call notes
@@ -539,6 +503,28 @@ function AnalyticsView() {
           </ul>
         )}
       </section>
+
+      {(coachingM.isPending || coachingM.data) && (
+        <section className="bg-card border border-border rounded-xl p-5">
+          <h3 className="font-semibold text-sm inline-flex items-center gap-1.5 mb-3">
+            <Sparkles className="size-4 text-primary" /> AI coaching suggestions
+          </h3>
+          {coachingM.isPending ? (
+            <p className="text-xs text-muted-foreground animate-pulse">Generating coaching tips…</p>
+          ) : coachingM.data?.error ? (
+            <p className="text-xs text-destructive">{coachingM.data.error}</p>
+          ) : (
+            <div className="space-y-3">
+              {coachingM.data!.coaching.split("\n\n").filter(Boolean).map((tip, i) => (
+                <div key={i} className="flex gap-3">
+                  <span className="mt-0.5 size-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                  <p className="text-sm text-foreground/90 leading-relaxed">{tip}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }

@@ -3,6 +3,46 @@ import { generateText } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+export const generateCoaching = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      objections: z.array(z.object({ label: z.string(), count: z.number() })),
+      totalCalls: z.number(),
+      transfers: z.number(),
+      meetings: z.number(),
+    }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    type Result = { coaching: string; error: string | null };
+    if (data.objections.length === 0) return { coaching: "", error: null } satisfies Result;
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) return { coaching: "", error: "AI analysis isn't configured (missing LOVABLE_API_KEY)." } satisfies Result;
+    const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
+    const gateway = createLovableAiGatewayProvider(key);
+    try {
+      const { text } = await generateText({
+        model: gateway("google/gemini-3-flash-preview"),
+        prompt: `You are an elite cold-calling coach. Based on these call outcomes, write exactly 3 short, punchy, actionable coaching tips to improve results.
+
+Stats: ${data.totalCalls} calls, ${data.transfers} transferred to DM, ${data.meetings} meetings booked.
+Top objections: ${data.objections.map((o) => `${o.label} (${o.count}×)`).join(", ")}.
+
+Rules:
+- Each tip is 1-2 sentences, direct and specific
+- Address the biggest pattern in the data
+- No bullet symbols, no numbering, no markdown
+- Separate tips with a blank line`,
+      });
+      return { coaching: text.trim(), error: null } satisfies Result;
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes("429")) return { coaching: "", error: "AI rate limit — try again in a moment" } satisfies Result;
+      if (msg.includes("402")) return { coaching: "", error: "AI credits exhausted" } satisfies Result;
+      return { coaching: "", error: `AI coaching failed: ${msg.slice(0, 200)}` } satisfies Result;
+    }
+  });
+
 export const analyzeObjections = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
