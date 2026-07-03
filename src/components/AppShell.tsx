@@ -55,16 +55,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </button>
       </aside>
 
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border">
-        <div className="flex items-center justify-around px-2 pt-2 pb-6">
+      {/* Mobile bottom nav — floating pill */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-center px-5 pb-6">
+        <div className="w-full bg-card border border-border rounded-2xl shadow-xl flex items-center justify-around px-2 py-2">
           {links.map((l) => {
             const active = l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
             const Icon = l.icon;
             return (
               <Link key={l.to} to={l.to} className="flex flex-col items-center">
                 <span className={`flex flex-col items-center gap-1 px-5 py-1.5 rounded-full transition-colors ${
-                  active ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                  active ? "bg-muted/60 text-primary" : "text-muted-foreground"
                 }`}>
                   <Icon className="size-5" />
                   <span className="text-[10px] font-medium">{l.label}</span>
