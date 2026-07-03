@@ -57,17 +57,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile bottom nav — floating pill */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-center px-5 pb-6">
-        <div className="w-full bg-card border border-border rounded-2xl shadow-xl flex items-center justify-around px-2 py-2">
+        <div className="w-full bg-card border border-border rounded-full shadow-xl flex items-center justify-around px-2 py-1.5">
           {links.map((l) => {
             const active = l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
             const Icon = l.icon;
             return (
               <Link key={l.to} to={l.to} className="flex flex-col items-center">
-                <span className={`flex flex-col items-center gap-1 px-5 py-1.5 rounded-full transition-colors ${
+                <span className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-full transition-colors ${
                   active ? "bg-muted/60 text-primary" : "text-muted-foreground"
                 }`}>
-                  <Icon className="size-5" />
-                  <span className="text-[10px] font-medium">{l.label}</span>
+                  <Icon className="size-4" />
+                  <span className="text-[9px] font-medium">{l.label}</span>
                 </span>
               </Link>
             );
