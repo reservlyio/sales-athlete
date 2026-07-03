@@ -62,8 +62,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             const active = l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
             const Icon = l.icon;
             return (
-              <Link key={l.to} to={l.to} className="flex flex-col items-center">
-                <span className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-full transition-colors ${
+              <Link key={l.to} to={l.to} className="flex-1 flex justify-center">
+                <span className={`inline-flex flex-col items-center gap-0.5 px-4 py-2 rounded-full transition-colors ${
                   active ? "bg-muted/60 text-primary" : "text-muted-foreground"
                 }`}>
                   <Icon className="size-4" />
