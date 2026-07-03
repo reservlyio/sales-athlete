@@ -296,11 +296,11 @@ function LeadsPage() {
                             {[l.contact_name, l.phone, l.location].filter(Boolean).join(" · ")}
                           </div>
                         </Link>
-                        <div className="flex flex-col md:flex-row gap-2 shrink-0">
+                        <div className="flex flex-col md:flex-row gap-3 md:gap-2 shrink-0">
                           <button
                             onClick={(e) => { e.preventDefault(); nav({ to: "/leads/$id", params: { id: l.id }, search: { logCall: "1" } }); }}
                             title="Go to lead and log a call"
-                            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all select-none ${
+                            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 md:px-4 md:py-2 rounded-full border transition-all select-none ${
                               l.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
                             }`}
                           >
@@ -317,7 +317,7 @@ function LeadsPage() {
                                 },
                               });
                             }}
-                            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+                            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 md:px-4 md:py-2 rounded-full border transition-all ${
                               l.email_sent ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
                             }`}
                           >
