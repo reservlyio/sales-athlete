@@ -296,7 +296,7 @@ function LeadsPage() {
                             {[l.contact_name, l.phone, l.location].filter(Boolean).join(" · ")}
                           </div>
                         </Link>
-                        <div className="flex flex-col gap-1 shrink-0">
+                        <div className="flex flex-col gap-2 shrink-0">
                           <button
                             onClick={(e) => { e.preventDefault(); nav({ to: "/leads/$id", params: { id: l.id }, search: { logCall: "1" } }); }}
                             title="Go to lead and log a call"
