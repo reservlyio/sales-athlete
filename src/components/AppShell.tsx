@@ -56,26 +56,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 grid grid-cols-4 bg-card border-t border-border">
-        {links.map((l) => {
-          const active = l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
-          const Icon = l.icon;
-          return (
-            <Link key={l.to} to={l.to} className="flex items-center justify-center py-2.5">
-              {active ? (
-                <span className="inline-flex items-center gap-2 rounded-full bg-muted/60 px-4 py-2 text-primary text-[11px] font-medium">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-center px-5 pb-6">
+        <div className="w-fit mx-auto bg-card border border-border rounded-full shadow-xl flex items-center gap-1 px-2 py-1.5">
+          {links.map((l) => {
+            const active = l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
+            const Icon = l.icon;
+            return (
+              <Link key={l.to} to={l.to} className="flex flex-col items-center justify-center">
+                <span
+                  className={`inline-flex flex-col items-center gap-0.5 rounded-full px-3 py-2 text-[10px] font-medium transition-colors ${
+                    active ? "bg-muted/60 text-primary" : "text-muted-foreground"
+                  }`}
+                >
                   <Icon className="size-5" />
                   {l.label}
                 </span>
-              ) : (
-                <span className="flex flex-col items-center gap-1 text-muted-foreground text-[11px]">
-                  <Icon className="size-5" />
-                  {l.label}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
 
       <main className="px-4 md:px-8 py-5 md:py-8 max-w-6xl mx-auto">{children}</main>
