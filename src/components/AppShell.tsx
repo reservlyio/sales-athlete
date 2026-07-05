@@ -62,11 +62,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             const active = l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
             const Icon = l.icon;
             return (
-              <Link key={l.to} to={l.to} className="flex-1 flex justify-center">
+              <Link key={l.to} to={l.to} className="group flex-1 flex justify-center">
                 <span className={`inline-flex flex-col items-center gap-0.5 px-3 py-2.5 rounded-full transition-colors ${
                   active ? "bg-muted/60 text-primary" : "text-muted-foreground"
                 }`}>
-                  <Icon className="size-5" />
+                  <span className={`flex items-center justify-center rounded-full p-2 ${
+                    active ? "" : "group-active:bg-accent"
+                  }`}>
+                    <Icon className="size-5" />
+                  </span>
                   <span className="text-[10px] font-medium">{l.label}</span>
                 </span>
               </Link>
