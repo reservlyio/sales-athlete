@@ -271,6 +271,7 @@ function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () =
   const [objectionSource, setObjectionSource] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [followUp, setFollowUp] = useState("");
+  const [clearFollowUp, setClearFollowUp] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   const parser = useServerFn(parseFollowUpDate);
@@ -316,10 +317,18 @@ function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () =
         called: true,
         last_contact_date: today,
         last_call_result: result,
-        // Each new call replaces the previous follow-up — clears if none in this note
-        next_follow_up: followUp || null,
-        follow_up_source: followUp ? (notes || null) : null,
       };
+      if (followUp) {
+        // A new follow-up was set for this call — replaces the previous one
+        patch.next_follow_up = followUp;
+        patch.follow_up_source = notes || null;
+      } else if (clearFollowUp) {
+        // User explicitly chose to clear the existing follow-up
+        patch.next_follow_up = null;
+        patch.follow_up_source = null;
+      }
+      // else: no new date and not explicitly cleared — leave existing next_follow_up untouched
+
       if (followUp) {
         patch.deal_stage = "follow_up";
       } else if (result === "Meeting Booked") {
@@ -332,7 +341,7 @@ function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () =
     },
     onSuccess: () => {
       toast.success("Call logged");
-      setNotes(""); setFollowUp(""); setParseHint(null); setResult(""); setObjectionSource(null); setOpen(false);
+      setNotes(""); setFollowUp(""); setClearFollowUp(false); setParseHint(null); setResult(""); setObjectionSource(null); setOpen(false);
       onLogged();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -464,6 +473,16 @@ function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () =
             </button>
           )}
         </div>
+        {!followUp && lead.next_follow_up && (
+          <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={clearFollowUp}
+              onChange={(e) => setClearFollowUp(e.target.checked)}
+            />
+            Clear existing follow-up ({fmtDate(lead.next_follow_up)}) instead of keeping it
+          </label>
+        )}
       </div>
       <button
         onClick={() => log.mutate()}
