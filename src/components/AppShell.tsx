@@ -57,21 +57,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile bottom nav — floating pill */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-center px-5 pb-6">
-        <div className="w-full bg-card border border-border rounded-full shadow-xl flex items-center justify-around px-2 py-1.5">
+        <div className="w-full bg-card border border-border rounded-full shadow-xl flex items-center justify-around px-1.5 py-1">
           {links.map((l) => {
             const active = l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
             const Icon = l.icon;
             return (
-              <Link key={l.to} to={l.to} className="group flex-1 flex justify-center">
-                <span className={`inline-flex flex-col items-center gap-0.5 px-3 py-2.5 rounded-full transition-colors ${
-                  active ? "bg-muted/60 text-primary" : "text-muted-foreground"
+              <Link key={l.to} to={l.to} className="group flex-1 flex flex-col items-center justify-center gap-0.5 py-1">
+                <span className={`flex items-center justify-center rounded-full p-2 transition-colors ${
+                  active
+                    ? "bg-muted/60 text-primary"
+                    : "text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground"
                 }`}>
-                  <span className={`flex items-center justify-center rounded-full p-2 ${
-                    active ? "" : "group-active:bg-accent"
-                  }`}>
-                    <Icon className="size-5" />
-                  </span>
-                  <span className="text-[10px] font-medium">{l.label}</span>
+                  <Icon className="size-4" />
+                </span>
+                <span className={`text-[9px] font-medium ${active ? "text-primary" : "text-muted-foreground"}`}>
+                  {l.label}
                 </span>
               </Link>
             );
