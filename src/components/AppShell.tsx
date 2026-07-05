@@ -57,14 +57,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-center px-5 pb-6">
-        <div className="w-fit mx-auto bg-card border border-border rounded-full shadow-xl flex items-center gap-2 px-3 py-1.5">
+        <div className="w-fit mx-auto bg-card border border-border rounded-full shadow-xl flex items-center gap-3 px-4 py-1.5">
           {links.map((l) => {
             const active = l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
             const Icon = l.icon;
             return (
               <Link key={l.to} to={l.to} className="flex flex-col items-center justify-center">
                 <span
-                  className={`inline-flex flex-col items-center gap-0.5 rounded-full px-4 py-2 text-[10px] font-medium transition-colors ${
+                  className={`inline-flex flex-col items-center gap-0.5 rounded-full px-5 py-2 text-[10px] font-medium transition-colors ${
                     active ? "bg-muted/60 text-primary" : "text-muted-foreground"
                   }`}
                 >
