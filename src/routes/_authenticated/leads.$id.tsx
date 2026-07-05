@@ -159,8 +159,21 @@ function LeadDetail() {
 
       {/* Activity strip — timeline style */}
       <div className="bg-card border border-border rounded-xl px-5 py-5 mt-8 mb-5 space-y-5">
+        {/* Timeline bar */}
+        <div className="flex items-center gap-6">
+          <div className="text-left shrink-0">
+            <div className="font-semibold text-sm stat-num">{fmtDate(lead.last_contact_date)}</div>
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Last contact</div>
+          </div>
+          <div className="flex-1 h-px bg-border" />
+          <div className="text-right shrink-0">
+            <div className="font-semibold text-sm stat-num">{fmtDate(lead.next_follow_up)}</div>
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Next follow-up</div>
+          </div>
+        </div>
+
         {/* Chips row */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pt-5 border-t border-border">
           <button
             type="button"
             onClick={async () => {
@@ -187,23 +200,6 @@ function LeadDetail() {
           >
             <span className={`size-2.5 rounded-full shrink-0 ${lead.email_sent ? "bg-blue-400" : "bg-muted-foreground/40"}`} /> Email sent
           </button>
-        </div>
-
-        {/* Timeline bar */}
-        <div className="flex items-center gap-6">
-          <div className="text-left shrink-0">
-            <div className="font-semibold text-sm stat-num">{fmtDate(lead.last_contact_date)}</div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Last contact</div>
-          </div>
-          <div className="flex-1 h-px bg-border relative">
-            <div className="absolute inset-y-0 -left-1 -right-1 flex items-center justify-center">
-              <div className="size-1.5 rounded-full bg-border" />
-            </div>
-          </div>
-          <div className="text-right shrink-0">
-            <div className="font-semibold text-sm stat-num">{fmtDate(lead.next_follow_up)}</div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Next follow-up</div>
-          </div>
         </div>
       </div>
 
