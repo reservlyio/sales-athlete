@@ -298,12 +298,12 @@ function LeadsPage() {
                             {[l.contact_name, l.phone, l.location].filter(Boolean).join(" · ")}
                           </div>
                         </Link>
-                        <div className="flex flex-col md:flex-row gap-3 shrink-0">
+                        <div className="flex flex-col md:flex-row gap-2 shrink-0">
                           <button
                             onClick={(e) => { e.preventDefault(); nav({ to: "/leads/$id", params: { id: l.id }, search: { logCall: "1" } }); }}
                             title="Go to lead and log a call"
                             className={`inline-flex items-center gap-1.5 text-sm md:text-xs font-semibold px-5 py-2.5 md:px-4 md:py-2 rounded-full border transition-all select-none ${
-                              l.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/60 border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+                              l.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/70 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
                             }`}
                           >
                             <span className={`size-2 rounded-full shrink-0 ${l.called ? "bg-emerald-500" : "bg-muted-foreground/40"}`} /> Called
@@ -320,7 +320,7 @@ function LeadsPage() {
                               });
                             }}
                             className={`inline-flex items-center gap-1.5 text-sm md:text-xs font-semibold px-5 py-2.5 md:px-4 md:py-2 rounded-full border transition-all ${
-                              l.email_sent ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-muted/60 border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+                              l.email_sent ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-muted/70 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
                             }`}
                           >
                             <span className={`size-2 rounded-full shrink-0 ${l.email_sent ? "bg-blue-400" : "bg-muted-foreground/40"}`} /> Emailed
