@@ -157,9 +157,8 @@ function LeadDetail() {
       {/* Log call panel */}
       <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} autoOpen={shouldAutoOpen.current} />
 
-      {/* Activity strip — timeline style */}
-      <div className="bg-card border border-border rounded-xl px-5 py-5 mt-8 mb-5 space-y-5">
-        {/* Timeline bar */}
+      {/* Timeline card */}
+      <div className="bg-card border border-border rounded-xl px-5 py-5 mt-8 mb-3">
         <div className="flex items-center gap-6">
           <div className="text-left shrink-0">
             <div className="font-semibold text-sm stat-num">{fmtDate(lead.last_contact_date)}</div>
@@ -171,9 +170,11 @@ function LeadDetail() {
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Next follow-up</div>
           </div>
         </div>
+      </div>
 
-        {/* Chips row */}
-        <div className="flex items-center gap-2 pt-5 border-t border-border">
+      {/* Called / Email sent card */}
+      <div className="bg-card border border-border rounded-xl px-5 py-5 mb-5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={async () => {
