@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { fmtDate } from "@/lib/crm";
+import { Search } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/calls")({
   head: () => ({ meta: [{ title: "Call log" }] }),
@@ -20,6 +22,7 @@ type Row = {
 };
 
 function CallsPage() {
+  const [search, setSearch] = useState("");
   const q = useQuery({
     queryKey: ["all-calls"],
     queryFn: async (): Promise<Row[]> => {
@@ -34,9 +37,13 @@ function CallsPage() {
     },
   });
 
+  const filtered = search.trim()
+    ? (q.data ?? []).filter((r) => r.company.toLowerCase().includes(search.trim().toLowerCase()))
+    : (q.data ?? []);
+
   // group by date
   const grouped = new Map<string, Row[]>();
-  (q.data ?? []).forEach((r) => {
+  filtered.forEach((r) => {
     const list = grouped.get(r.call_date) ?? [];
     list.push(r);
     grouped.set(r.call_date, list);
@@ -49,11 +56,21 @@ function CallsPage() {
         Last 200 calls · {q.data?.length ?? 0} entries
       </p>
 
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search company…"
+          className="w-full bg-card border border-border rounded-md pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-primary"
+        />
+      </div>
+
       {q.isLoading ? (
         <div className="text-sm text-muted-foreground">Loading…</div>
       ) : grouped.size === 0 ? (
         <div className="bg-card border border-border rounded-xl p-10 text-center text-sm text-muted-foreground">
-          No calls logged yet. Get out there. 📞
+          {search.trim() ? "No calls match your search." : "No calls logged yet. Get out there. 📞"}
         </div>
       ) : (
         <div className="space-y-5">
