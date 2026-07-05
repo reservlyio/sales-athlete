@@ -21,9 +21,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     navigate({ to: "/auth", replace: true });
   }
   return (
-    <div className="min-h-screen pb-20 md:pb-0 md:pl-56">
+    <div className="min-h-screen pb-20 md:pb-0 md:pl-60">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-56 border-r border-border bg-card flex-col p-4">
+      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-60 border-r border-border bg-card flex-col p-4">
         <div className="mb-8 px-2">
           <div className="text-xs uppercase tracking-widest text-muted-foreground">Sales OS</div>
           <div className="text-lg font-bold">Command Center</div>
@@ -36,11 +36,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={l.to}
                 to={l.to}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-md text-base font-medium transition-colors ${
                   active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 }`}
               >
-                <Icon className="size-4" />
+                <Icon className="size-5" />
                 {l.label}
               </Link>
             );
@@ -48,9 +48,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
         <button
           onClick={handleSignOut}
-          className="mt-auto flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+          className="mt-auto flex items-center gap-3 px-4 py-2.5 rounded-md text-base font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
         >
-          <LogOut className="size-4" />
+          <LogOut className="size-5" />
           Sign out
         </button>
       </aside>
