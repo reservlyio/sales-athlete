@@ -93,6 +93,13 @@
     background: linear-gradient(90deg, var(--color-primary), oklch(0.85 0.18 130));
     transition: width 0.4s ease;
   }
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Hide Lovable badge */

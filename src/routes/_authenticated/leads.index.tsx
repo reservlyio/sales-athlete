@@ -197,12 +197,12 @@ function LeadsPage() {
         </div>
       </header>
 
-      <div className="flex gap-0.5 mb-4 bg-muted rounded-full px-2 py-1 overflow-x-auto">
+      <div className="flex gap-0.5 mb-6 md:mb-4 bg-muted rounded-full px-2 py-1.5 md:py-1 overflow-x-auto no-scrollbar">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`md:flex-1 whitespace-nowrap px-5 py-1.5 rounded-full text-sm font-medium transition-all ${
+            className={`md:flex-1 whitespace-nowrap px-5 py-2 md:py-1.5 rounded-full text-sm font-medium transition-all ${
               tab === t.id
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10"
