@@ -158,7 +158,7 @@ function LeadDetail() {
       <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} autoOpen={shouldAutoOpen.current} />
 
       {/* Timeline card */}
-      <div className="bg-card border border-border rounded-xl px-5 py-5 mt-8 mb-8">
+      <div className="bg-card border border-border rounded-xl px-5 py-5 mt-8 mb-5">
         <div className="flex items-center gap-6">
           <div className="text-left shrink-0">
             <div className="font-semibold text-sm stat-num">{fmtDate(lead.last_contact_date)}</div>
