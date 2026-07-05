@@ -1,10 +1,11 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Home, Users, Phone, Settings as SettingsIcon, LogOut } from "lucide-react";
+import { Home, Video, Users, Phone, Settings as SettingsIcon, LogOut } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 const links = [
   { to: "/", label: "Today", icon: Home },
+  { to: "/training", label: "Training", icon: Video },
   { to: "/leads", label: "Leads", icon: Users },
   { to: "/calls", label: "Calls", icon: Phone },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
