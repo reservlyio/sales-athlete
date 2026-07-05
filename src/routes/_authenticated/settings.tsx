@@ -102,7 +102,7 @@ function SettingsPage() {
       <button
         onClick={() => save.mutate()}
         disabled={save.isPending}
-        className="w-full bg-primary text-primary-foreground rounded-md py-3 font-semibold disabled:opacity-50"
+        className="w-full mt-6 bg-primary text-primary-foreground rounded-full py-4 font-semibold disabled:opacity-50"
       >
         {save.isPending ? "Saving…" : "Save changes"}
       </button>
