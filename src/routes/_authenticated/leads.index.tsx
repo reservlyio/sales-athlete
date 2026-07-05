@@ -271,28 +271,30 @@ function LeadsPage() {
                   const showFuBadge = fuBadge && (tab === "all" || tab === "followups");
                   return (
                     <li key={l.id}>
-                      <div className="flex items-center gap-2 px-3 py-2.5 hover:bg-accent/30">
+                      <div className="flex items-center gap-3 md:gap-2 px-4 py-3 md:px-3 md:py-2.5 hover:bg-accent/30">
                         <Link to="/leads/$id" params={{ id: l.id }} className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-2">
                             <span className="font-medium truncate">{l.company}</span>
-                            {(() => {
-                              const effectiveStage =
-                                l.deal_stage === "contacted" && !l.email_sent
-                                  ? (l.called ? "called_only" : "new_lead")
-                                  : l.deal_stage;
-                              const label = effectiveStage === "called_only" ? "Called" : (STAGE_LABEL[effectiveStage] ?? effectiveStage);
-                              const color = effectiveStage === "called_only" ? "bg-accent text-accent-foreground" : (STAGE_COLOR[effectiveStage] || "");
-                              return (
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${color}`}>{label}</span>
-                              );
-                            })()}
-                            {showFuBadge && fuBadge && (
-                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${fuBadge.color}`}>
-                                <CalendarClock className="size-3" /> {fuBadge.label}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {(() => {
+                                const effectiveStage =
+                                  l.deal_stage === "contacted" && !l.email_sent
+                                    ? (l.called ? "called_only" : "new_lead")
+                                    : l.deal_stage;
+                                const label = effectiveStage === "called_only" ? "Called" : (STAGE_LABEL[effectiveStage] ?? effectiveStage);
+                                const color = effectiveStage === "called_only" ? "bg-accent text-accent-foreground" : (STAGE_COLOR[effectiveStage] || "");
+                                return (
+                                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${color}`}>{label}</span>
+                                );
+                              })()}
+                              {showFuBadge && fuBadge && (
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${fuBadge.color}`}>
+                                  <CalendarClock className="size-3" /> {fuBadge.label}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground truncate stat-num mt-0.5">
+                          <div className="text-xs text-muted-foreground truncate stat-num mt-1.5 md:mt-0.5">
                             {[l.contact_name, l.phone, l.location].filter(Boolean).join(" · ")}
                           </div>
                         </Link>
