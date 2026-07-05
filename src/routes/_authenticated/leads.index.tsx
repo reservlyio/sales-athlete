@@ -7,7 +7,7 @@ import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { importFromNotion } from "@/lib/notion-import.functions";
 import { analyzeObjections, generateCoaching } from "@/lib/analytics.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3 } from "lucide-react";
+import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/leads/")({
@@ -240,15 +240,18 @@ function LeadsPage() {
                 className="w-full bg-card border border-border rounded-md pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-primary"
               />
             </div>
-            <select
-              value={limit}
-              onChange={(e) => setLimit(Number(e.target.value))}
-              className="bg-card border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
-            >
-              {[25, 50, 100, 200].map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={limit}
+                onChange={(e) => setLimit(Number(e.target.value))}
+                className="appearance-none bg-card border border-border rounded-md pl-3 pr-7 py-2 text-sm focus:outline-none focus:border-primary"
+              >
+                {[25, 50, 100, 200].map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+            </div>
           </div>
 
           <div className="bg-card rounded-xl border border-border overflow-hidden">
