@@ -246,7 +246,9 @@ function Dashboard() {
       </div>
 
       {/* Training */}
-      <TrainingCard />
+      <div className="mt-8">
+        <TrainingCard />
+      </div>
     </AppShell>
   );
 }
