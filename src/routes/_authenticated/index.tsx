@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { todayISO, fmtDate } from "@/lib/crm";
@@ -78,10 +78,21 @@ function computeStreak(byDay: Map<string, number>, goal: number, workDays: numbe
   return streak;
 }
 
+const TRAINING_VIDEO_URL_KEY = "training-video-url";
+
 function TrainingCard() {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
   const embedUrl = useMemo(() => getVideoEmbedUrl(url), [url]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(TRAINING_VIDEO_URL_KEY);
+    if (saved) setUrl(saved);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(TRAINING_VIDEO_URL_KEY, url);
+  }, [url]);
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
