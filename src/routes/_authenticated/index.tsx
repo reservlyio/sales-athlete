@@ -88,7 +88,7 @@ function TrainingCard() {
       <div className="bg-card rounded-xl border border-border p-4">
         <CollapsibleTrigger className="w-full flex items-center justify-between cursor-pointer">
           <div className="flex items-center gap-2">
-            <span className="text-lg">📷</span>
+            <Camera className="h-5 w-5 text-green-500" />
             <span className="font-bold">Training</span>
           </div>
           <ChevronDown
