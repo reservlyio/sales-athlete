@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { todayISO, fmtDate } from "@/lib/crm";
-import { Flame, Trophy, Target, Phone, ChevronDown } from "lucide-react";
+import { Flame, Trophy, Target, Phone, ChevronDown, Camera } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 
