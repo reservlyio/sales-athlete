@@ -103,7 +103,7 @@ function TrainingCard() {
               onChange={(e) => setUrl(e.target.value)}
             />
             {embedUrl && (
-              <div className="aspect-video rounded-md overflow-hidden border border-border">
+              <div className="aspect-video rounded-md overflow-hidden border border-border -mx-4">
                 <iframe
                   src={embedUrl}
                   title="Training video"
