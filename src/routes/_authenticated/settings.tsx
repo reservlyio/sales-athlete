@@ -10,7 +10,10 @@ export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
 });
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// Displayed Mon -> Sun; values are JS Date.getDay() indices (Sun=0) since
+// that's what's stored in work_days and used elsewhere (e.g. streak calc).
+const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const PRESETS = [50, 75, 100];
 
 function SettingsPage() {
@@ -83,7 +86,7 @@ function SettingsPage() {
           Non-work days don't break your streak.
         </p>
         <div className="grid grid-cols-7 gap-1.5">
-          {DAY_NAMES.map((n, i) => (
+          {DAY_ORDER.map((i, pos) => (
             <button
               key={i}
               onClick={() => toggleDay(i)}
@@ -93,7 +96,7 @@ function SettingsPage() {
                   : "bg-input border-border text-muted-foreground"
               }`}
             >
-              {n}
+              {DAY_NAMES[pos]}
             </button>
           ))}
         </div>
