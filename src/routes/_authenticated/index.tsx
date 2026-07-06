@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { todayISO, fmtDate } from "@/lib/crm";
-import { Flame, Trophy, Target, Phone, ChevronDown, Camera } from "lucide-react";
+import { Flame, Trophy, Target, Phone, ChevronDown, Video } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 
@@ -88,7 +88,7 @@ function TrainingCard() {
       <div className="bg-card rounded-xl border border-border p-4">
         <CollapsibleTrigger className="w-full flex items-center justify-between cursor-pointer">
           <div className="flex items-center gap-2">
-            <Camera className="h-5 w-5 text-green-500" />
+            <Video className="h-5 w-5 text-green-500" />
             <span className="font-bold">Training</span>
           </div>
           <ChevronDown
