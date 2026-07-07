@@ -157,38 +157,6 @@ function LeadDetail() {
       {/* Log call panel */}
       <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} autoOpen={shouldAutoOpen.current} />
 
-      {/* Called / Email sent card */}
-      <div className="bg-card border border-border rounded-xl px-5 py-5 mt-8 mb-5">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={async () => {
-              if (!lead.called) { updateLead.mutate({ called: true, last_contact_date: todayISO() }); return; }
-              const { error: delErr } = await supabase.from("call_logs").delete().eq("lead_id", id);
-              if (delErr) { toast.error(delErr.message); return; }
-              updateLead.mutate({ called: false, last_contact_date: null, last_call_result: null, deal_stage: lead.email_sent ? "contacted" : "new_lead", next_follow_up: null, follow_up_source: null });
-              qc.invalidateQueries({ queryKey: ["lead-logs", id] });
-              qc.invalidateQueries({ queryKey: ["leads-list"] });
-              toast.success("Moved back to All Leads");
-            }}
-            className={`inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full border transition-all ${
-              lead.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <span className={`size-2.5 rounded-full shrink-0 ${lead.called ? "bg-emerald-500" : "bg-muted-foreground/40"}`} /> Called
-          </button>
-          <button
-            type="button"
-            onClick={() => updateLead.mutate({ email_sent: !lead.email_sent })}
-            className={`inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full border transition-all ${
-              lead.email_sent ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-muted/50 border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <span className={`size-2.5 rounded-full shrink-0 ${lead.email_sent ? "bg-blue-400" : "bg-muted-foreground/40"}`} /> Email sent
-          </button>
-        </div>
-      </div>
-
       {/* Timeline card */}
       <div className="bg-card border border-border rounded-xl px-5 py-5 mb-5">
         <div className="flex items-center gap-6">
