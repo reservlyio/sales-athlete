@@ -29,7 +29,9 @@ type Lead = {
   called: boolean;
   email_sent: boolean;
   next_follow_up: string | null;
+  last_contact_date: string | null;
   created_at: string;
+  updated_at: string;
 };
 
 const TABS: { id: Tab; label: string }[] = [
@@ -77,7 +79,7 @@ function LeadsPage() {
     enabled: tab !== "analytics",
     queryFn: async (): Promise<Lead[]> => {
       const cols =
-        "id,company,contact_name,phone,email,location,deal_stage,called,email_sent,next_follow_up,created_at";
+        "id,company,contact_name,phone,email,location,deal_stage,called,email_sent,next_follow_up,last_contact_date,created_at,updated_at";
 
       if (tab === "all") {
         const base = supabase
@@ -124,7 +126,7 @@ function LeadsPage() {
           .neq("deal_stage", "client")
           .order("next_follow_up", { ascending: true });
       } else if (tab === "called") {
-        q = q.eq("called", true).order("created_at", { ascending: true });
+        q = q.eq("called", true).order("updated_at", { ascending: false });
       } else if (tab === "contacted") {
         q = q.eq("email_sent", true).eq("called", false).order("created_at", { ascending: true });
       } else if (tab === "meeting") {
