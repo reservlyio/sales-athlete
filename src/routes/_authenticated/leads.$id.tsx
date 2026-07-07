@@ -155,7 +155,47 @@ function LeadDetail() {
       </div>
 
       {/* Log call panel */}
-      <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} autoOpen={shouldAutoOpen.current} />
+      <LogCallPanel
+        lead={lead}
+        onLogged={async () => {
+          qc.invalidateQueries();
+          const today = todayISO();
+          const cols = "id,called,next_follow_up,created_at,deal_stage";
+          const [f, b] = await Promise.all([
+            supabase
+              .from("leads")
+              .select(cols)
+              .lte("next_follow_up", today)
+              .neq("deal_stage", "client")
+              .neq("deal_stage", "lost")
+              .order("next_follow_up", { ascending: true })
+              .limit(100),
+            supabase
+              .from("leads")
+              .select(cols)
+              .eq("called", false)
+              .neq("deal_stage", "lost")
+              .neq("deal_stage", "client")
+              .order("created_at", { ascending: true })
+              .limit(200),
+          ]);
+          const seen = new Set<string>();
+          const merged: { id: string }[] = [];
+          for (const l of (f.data ?? []) as { id: string }[]) {
+            if (!seen.has(l.id)) { seen.add(l.id); merged.push(l); }
+          }
+          for (const l of (b.data ?? []) as { id: string }[]) {
+            if (!seen.has(l.id)) { seen.add(l.id); merged.push(l); }
+          }
+          const remaining = merged.filter((l) => l.id !== lead.id);
+          if (remaining.length > 0) {
+            nav({ to: "/leads/$id", params: { id: remaining[0].id }, search: { logCall: "1" } });
+          } else {
+            nav({ to: "/leads" });
+          }
+        }}
+        autoOpen={shouldAutoOpen.current}
+      />
 
       {/* Timeline card */}
       <div className="bg-card border border-border rounded-xl px-5 py-5 mb-5">

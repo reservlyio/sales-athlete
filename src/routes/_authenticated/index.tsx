@@ -257,7 +257,7 @@ function Dashboard() {
       </div>
 
       {/* Training */}
-      <div className="mt-12">
+      <div className="mt-12 mb-12">
         <TrainingCard />
       </div>
     </AppShell>
