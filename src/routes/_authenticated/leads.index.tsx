@@ -165,6 +165,32 @@ function LeadsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const undoCall = useMutation({
+    mutationFn: async (l: Lead) => {
+      const { error: delErr } = await supabase.from("call_logs").delete().eq("lead_id", l.id);
+      if (delErr) throw delErr;
+      const { error } = await supabase
+        .from("leads")
+        .update({
+          called: false,
+          last_contact_date: null,
+          last_call_result: null,
+          next_follow_up: null,
+          follow_up_source: null,
+          deal_stage: l.email_sent ? "contacted" : "new_lead",
+        })
+        .eq("id", l.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Moved back to All Leads");
+      qc.invalidateQueries({ queryKey: ["leads-list"] });
+      qc.invalidateQueries({ queryKey: ["leads-total"] });
+      qc.invalidateQueries({ queryKey: ["leads-due-count"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const empty = (totalQ.data ?? 0) === 0;
 
   return (
@@ -301,8 +327,17 @@ function LeadsPage() {
                         </Link>
                         <div className="flex flex-col md:flex-row gap-3 shrink-0">
                           <button
-                            onClick={(e) => { e.preventDefault(); nav({ to: "/leads/$id", params: { id: l.id }, search: { logCall: "1" } }); }}
-                            title="Go to lead and log a call"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (l.called) {
+                                if (confirm("Undo this call? This clears its call history and moves it back to All Leads.")) {
+                                  undoCall.mutate(l);
+                                }
+                                return;
+                              }
+                              nav({ to: "/leads/$id", params: { id: l.id }, search: { logCall: "1" } });
+                            }}
+                            title={l.called ? "Undo call — move back to All Leads" : "Go to lead and log a call"}
                             className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 md:px-4 md:py-2 rounded-full border transition-all select-none ${
                               l.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/70 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
                             }`}
