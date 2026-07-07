@@ -155,7 +155,7 @@ function LeadDetail() {
       </div>
 
       {/* Log call panel */}
-      <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); }} autoOpen={shouldAutoOpen.current} />
+      <LogCallPanel lead={lead} onLogged={() => { qc.invalidateQueries(); nav({ to: "/leads" }); }} autoOpen={shouldAutoOpen.current} />
 
       {/* Called / Email sent card */}
       <div className="bg-card border border-border rounded-xl px-5 py-5 mt-8 mb-5">
