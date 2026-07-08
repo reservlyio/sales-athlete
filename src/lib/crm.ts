@@ -33,9 +33,12 @@ export const STAGE_COLOR: Record<string, string> = {
   lost: "bg-red-500/15 text-red-400",
 };
 
-export function todayISO() {
-  const d = new Date();
+export function dateToISO(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export function todayISO() {
+  return dateToISO(new Date());
 }
 
 export function fmtDate(s: string | null | undefined) {

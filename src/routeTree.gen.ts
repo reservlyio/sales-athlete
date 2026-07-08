@@ -18,6 +18,7 @@ import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedCallsRouteImport } from './routes/_authenticated/calls'
 import { Route as AuthenticatedLeadsIndexRouteImport } from './routes/_authenticated/leads.index'
 import { Route as AuthenticatedLeadsNewRouteImport } from './routes/_authenticated/leads.new'
+import { Route as AuthenticatedLeadsArchivedRouteImport } from './routes/_authenticated/leads.archived'
 import { Route as AuthenticatedLeadsIdRouteImport } from './routes/_authenticated/leads.$id'
 
 const TrustRoute = TrustRouteImport.update({
@@ -64,6 +65,12 @@ const AuthenticatedLeadsNewRoute = AuthenticatedLeadsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AuthenticatedLeadsRoute,
 } as any)
+const AuthenticatedLeadsArchivedRoute =
+  AuthenticatedLeadsArchivedRouteImport.update({
+    id: '/archived',
+    path: '/archived',
+    getParentRoute: () => AuthenticatedLeadsRoute,
+  } as any)
 const AuthenticatedLeadsIdRoute = AuthenticatedLeadsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -78,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/leads': typeof AuthenticatedLeadsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/leads/$id': typeof AuthenticatedLeadsIdRoute
+  '/leads/archived': typeof AuthenticatedLeadsArchivedRoute
   '/leads/new': typeof AuthenticatedLeadsNewRoute
   '/leads/': typeof AuthenticatedLeadsIndexRoute
 }
@@ -88,6 +96,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/': typeof AuthenticatedIndexRoute
   '/leads/$id': typeof AuthenticatedLeadsIdRoute
+  '/leads/archived': typeof AuthenticatedLeadsArchivedRoute
   '/leads/new': typeof AuthenticatedLeadsNewRoute
   '/leads': typeof AuthenticatedLeadsIndexRoute
 }
@@ -101,6 +110,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/leads/$id': typeof AuthenticatedLeadsIdRoute
+  '/_authenticated/leads/archived': typeof AuthenticatedLeadsArchivedRoute
   '/_authenticated/leads/new': typeof AuthenticatedLeadsNewRoute
   '/_authenticated/leads/': typeof AuthenticatedLeadsIndexRoute
 }
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/settings'
     | '/leads/$id'
+    | '/leads/archived'
     | '/leads/new'
     | '/leads/'
   fileRoutesByTo: FileRoutesByTo
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/'
     | '/leads/$id'
+    | '/leads/archived'
     | '/leads/new'
     | '/leads'
   id:
@@ -136,6 +148,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/'
     | '/_authenticated/leads/$id'
+    | '/_authenticated/leads/archived'
     | '/_authenticated/leads/new'
     | '/_authenticated/leads/'
   fileRoutesById: FileRoutesById
@@ -211,6 +224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeadsNewRouteImport
       parentRoute: typeof AuthenticatedLeadsRoute
     }
+    '/_authenticated/leads/archived': {
+      id: '/_authenticated/leads/archived'
+      path: '/archived'
+      fullPath: '/leads/archived'
+      preLoaderRoute: typeof AuthenticatedLeadsArchivedRouteImport
+      parentRoute: typeof AuthenticatedLeadsRoute
+    }
     '/_authenticated/leads/$id': {
       id: '/_authenticated/leads/$id'
       path: '/$id'
@@ -223,12 +243,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedLeadsRouteChildren {
   AuthenticatedLeadsIdRoute: typeof AuthenticatedLeadsIdRoute
+  AuthenticatedLeadsArchivedRoute: typeof AuthenticatedLeadsArchivedRoute
   AuthenticatedLeadsNewRoute: typeof AuthenticatedLeadsNewRoute
   AuthenticatedLeadsIndexRoute: typeof AuthenticatedLeadsIndexRoute
 }
 
 const AuthenticatedLeadsRouteChildren: AuthenticatedLeadsRouteChildren = {
   AuthenticatedLeadsIdRoute: AuthenticatedLeadsIdRoute,
+  AuthenticatedLeadsArchivedRoute: AuthenticatedLeadsArchivedRoute,
   AuthenticatedLeadsNewRoute: AuthenticatedLeadsNewRoute,
   AuthenticatedLeadsIndexRoute: AuthenticatedLeadsIndexRoute,
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { CALL_RESULTS, OBJECTION_SOURCES, todayISO, fmtDate } from "@/lib/crm";
+import { CALL_RESULTS, OBJECTION_SOURCES, todayISO, fmtDate, dateToISO } from "@/lib/crm";
 import { parseFollowUpDate } from "@/lib/ai.functions";
 import { parseFollowUpRegex } from "@/lib/follow-up-parser";
 import { Phone, X, Sparkles, Copy, Check, CalendarIcon } from "lucide-react";
@@ -224,7 +224,7 @@ export function CallLogInline({
                   mode="single"
                   selected={followUp ? new Date(followUp + "T00:00:00") : undefined}
                   onSelect={(date) => {
-                    setFollowUp(date ? date.toISOString().split("T")[0] : "");
+                    setFollowUp(date ? dateToISO(date) : "");
                     setCalendarOpen(false);
                   }}
                   disabled={{ before: new Date(todayISO() + "T00:00:00") }}

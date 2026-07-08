@@ -86,6 +86,7 @@ export type Database = {
           contact_name: string | null
           created_at: string
           deal_stage: string
+          deleted_at: string | null
           email: string | null
           email_sent: boolean
           follow_up_source: string | null
@@ -107,6 +108,7 @@ export type Database = {
           contact_name?: string | null
           created_at?: string
           deal_stage?: string
+          deleted_at?: string | null
           email?: string | null
           email_sent?: boolean
           follow_up_source?: string | null
@@ -128,6 +130,7 @@ export type Database = {
           contact_name?: string | null
           created_at?: string
           deal_stage?: string
+          deleted_at?: string | null
           email?: string | null
           email_sent?: boolean
           follow_up_source?: string | null

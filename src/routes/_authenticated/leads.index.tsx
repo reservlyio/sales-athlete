@@ -53,7 +53,7 @@ function LeadsPage() {
   const totalQ = useQuery({
     queryKey: ["leads-total"],
     queryFn: async () => {
-      const { count } = await supabase.from("leads").select("*", { count: "exact", head: true });
+      const { count } = await supabase.from("leads").select("*", { count: "exact", head: true }).is("deleted_at", null);
       return count ?? 0;
     },
   });
@@ -65,6 +65,7 @@ function LeadsPage() {
       const { count } = await supabase
         .from("leads")
         .select("*", { count: "exact", head: true })
+        .is("deleted_at", null)
         .lte("next_follow_up", t)
         .neq("deal_stage", "lost")
         .neq("deal_stage", "client");
@@ -85,6 +86,7 @@ function LeadsPage() {
         const base = supabase
           .from("leads")
           .select(cols)
+          .is("deleted_at", null)
           .eq("called", false)
           .neq("deal_stage", "lost")
           .neq("deal_stage", "client")
@@ -92,6 +94,7 @@ function LeadsPage() {
         const followups = supabase
           .from("leads")
           .select(cols)
+          .is("deleted_at", null)
           .lte("next_follow_up", today)
           .neq("deal_stage", "client")
           .neq("deal_stage", "lost")
@@ -118,7 +121,7 @@ function LeadsPage() {
         return merged;
       }
 
-      let q = supabase.from("leads").select(cols);
+      let q = supabase.from("leads").select(cols).is("deleted_at", null);
       if (tab === "followups") {
         q = q
           .not("next_follow_up", "is", null)
@@ -199,7 +202,10 @@ function LeadsPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Leads</h1>
           <p className="text-xs text-muted-foreground stat-num">
-            {totalQ.data ?? "…"} total in pipeline
+            {totalQ.data ?? "…"} total in pipeline ·{" "}
+            <Link to="/leads/archived" className="underline-offset-2 hover:underline hover:text-foreground">
+              Archived
+            </Link>
           </p>
         </div>
         <div className="flex gap-2">

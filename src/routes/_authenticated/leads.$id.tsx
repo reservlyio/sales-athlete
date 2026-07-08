@@ -4,11 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
-import { CALL_RESULTS, OBJECTION_SOURCES, DEAL_STAGES, STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
+import { CALL_RESULTS, OBJECTION_SOURCES, DEAL_STAGES, STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate, dateToISO } from "@/lib/crm";
 import { parseFollowUpDate } from "@/lib/ai.functions";
 import { parseFollowUpRegex } from "@/lib/follow-up-parser";
 import { toast } from "sonner";
-import { ArrowLeft, Phone, Mail, Globe, MapPin, Sparkles, X, Trash2, CalendarIcon, ChevronDown } from "lucide-react";
+import { ArrowLeft, Phone, Mail, Globe, MapPin, Sparkles, X, Trash2, CalendarIcon, ChevronDown, Pencil } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
@@ -90,6 +90,7 @@ function LeadDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const [editOpen, setEditOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [collapsedLogs, setCollapsedLogs] = useState<Set<string>>(new Set());
   const toggleLog = (logId: string) =>
@@ -97,11 +98,11 @@ function LeadDetail() {
 
   const del = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("leads").delete().eq("id", id);
+      const { error } = await supabase.from("leads").update({ deleted_at: new Date().toISOString() }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Lead deleted");
+      toast.success("Lead deleted — find it under Leads → Archived to restore");
       qc.invalidateQueries();
       nav({ to: "/leads" });
     },
@@ -118,15 +119,31 @@ function LeadDetail() {
       </Link>
 
       <header className="mb-5">
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center justify-between gap-2 mb-3">
           <StageChip stage={lead.deal_stage} onChange={(v) => updateLead.mutate({ deal_stage: v })} />
+          {!editOpen && (
+            <button
+              type="button"
+              onClick={() => setEditOpen(true)}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Pencil className="size-3.5" /> Edit
+            </button>
+          )}
         </div>
         <h1 className="text-2xl md:text-3xl font-bold">{lead.company}</h1>
-        {lead.contact_name && (
-          <p className="text-sm text-muted-foreground">
-            {lead.contact_name}
-            {lead.title && ` · ${lead.title}`}
-          </p>
+        {editOpen ? (
+          <ContactEditor
+            lead={lead}
+            onSave={(patch) => { updateLead.mutate(patch); setEditOpen(false); }}
+            onCancel={() => setEditOpen(false)}
+          />
+        ) : (
+          (lead.contact_name || lead.title || lead.phone) && (
+            <p className="text-sm text-muted-foreground">
+              {[lead.contact_name, lead.title, lead.phone].filter(Boolean).join(" · ")}
+            </p>
+          )
         )}
       </header>
 
@@ -172,10 +189,10 @@ function LeadDetail() {
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Last contact</div>
           </div>
           <div className="flex-1 h-px bg-border" />
-          <div className="text-right shrink-0">
-            <div className="font-semibold text-sm stat-num">{fmtDate(lead.next_follow_up)}</div>
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Next follow-up</div>
-          </div>
+          <FollowUpEditor
+            value={lead.next_follow_up}
+            onChange={(v) => updateLead.mutate(v ? { next_follow_up: v } : { next_follow_up: null, follow_up_source: null })}
+          />
         </div>
       </div>
 
@@ -434,7 +451,7 @@ function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () =
                 mode="single"
                 selected={followUp ? new Date(followUp + "T00:00:00") : undefined}
                 onSelect={(date) => {
-                  setFollowUp(date ? date.toISOString().split("T")[0] : "");
+                  setFollowUp(date ? dateToISO(date) : "");
                   setCalendarOpen(false);
                 }}
                 disabled={{ before: new Date(todayISO() + "T00:00:00") }}
@@ -467,6 +484,86 @@ function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () =
         {log.isPending ? "Saving…" : "Save call"}
       </button>
     </section>
+  );
+}
+
+function FollowUpEditor({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" className="text-right shrink-0 group">
+          <div className="font-semibold text-sm stat-num group-hover:text-primary transition-colors">{fmtDate(value)}</div>
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Next follow-up</div>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="end">
+        <Calendar
+          mode="single"
+          selected={value ? new Date(value + "T00:00:00") : undefined}
+          onSelect={(date) => { onChange(date ? dateToISO(date) : null); setOpen(false); }}
+          initialFocus
+        />
+        {value && (
+          <div className="p-2 border-t border-border">
+            <button
+              type="button"
+              onClick={() => { onChange(null); setOpen(false); }}
+              className="w-full text-xs text-muted-foreground hover:text-foreground py-1"
+            >
+              Clear follow-up date
+            </button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function ContactEditor({
+  lead,
+  onSave,
+  onCancel,
+}: {
+  lead: Lead;
+  onSave: (patch: { contact_name: string | null; phone: string | null }) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(lead.contact_name ?? "");
+  const [phone, setPhone] = useState(lead.phone ?? "");
+  return (
+    <div className="space-y-2 mt-1 mb-1">
+      <div>
+        <label className="text-xs text-muted-foreground">Contact name</label>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Contact name"
+          className="w-full mt-1 bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
+        />
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground">Phone</label>
+        <input
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="Phone number"
+          className="w-full mt-1 bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
+        />
+      </div>
+      <div className="flex gap-2 pt-1">
+        <button
+          type="button"
+          onClick={() => onSave({ contact_name: name.trim() || null, phone: phone.trim() || null })}
+          className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-semibold"
+        >
+          Save
+        </button>
+        <button type="button" onClick={onCancel} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }
 
