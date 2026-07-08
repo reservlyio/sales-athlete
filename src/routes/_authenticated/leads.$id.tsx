@@ -526,11 +526,12 @@ function ContactEditor({
   onCancel,
 }: {
   lead: Lead;
-  onSave: (patch: { contact_name: string | null; phone: string | null }) => void;
+  onSave: (patch: { contact_name: string | null; phone: string | null; website: string | null }) => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(lead.contact_name ?? "");
   const [phone, setPhone] = useState(lead.phone ?? "");
+  const [website, setWebsite] = useState(lead.website ?? "");
   return (
     <div className="space-y-2 mt-1 mb-1">
       <div>
@@ -551,10 +552,19 @@ function ContactEditor({
           className="w-full mt-1 bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
         />
       </div>
+      <div>
+        <label className="text-xs text-muted-foreground">Website</label>
+        <input
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          placeholder="https://…"
+          className="w-full mt-1 bg-input border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
+        />
+      </div>
       <div className="flex gap-2 pt-1">
         <button
           type="button"
-          onClick={() => onSave({ contact_name: name.trim() || null, phone: phone.trim() || null })}
+          onClick={() => onSave({ contact_name: name.trim() || null, phone: phone.trim() || null, website: website.trim() || null })}
           className="bg-primary text-primary-foreground rounded-md px-3 py-1.5 text-xs font-semibold"
         >
           Save
