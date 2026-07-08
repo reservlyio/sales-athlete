@@ -210,7 +210,7 @@ function LeadsPage() {
             onClick={() => importMut.mutate()}
             disabled={importMut.isPending}
             title="Re-sync all leads from Notion (replaces current list)"
-            className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            className="hidden md:inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50"
           >
             <Upload className="size-4" />
             {importMut.isPending ? "Syncing…" : empty ? "Import from Notion" : "Re-sync Notion"}
@@ -219,9 +219,9 @@ function LeadsPage() {
             to="/leads/archived"
             title="Archived leads"
             aria-label="Archived leads"
-            className="inline-flex items-center justify-center bg-card border border-border rounded-md size-9 hover:border-primary"
+            className="inline-flex items-center justify-center bg-card border border-border rounded-md size-11 hover:border-primary"
           >
-            <Archive className="size-4" />
+            <Archive className="size-5" />
           </Link>
           <Link
             to="/leads/new"
