@@ -7,7 +7,7 @@ import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { importFromNotion } from "@/lib/notion-import.functions";
 import { analyzeObjections, generateCoaching } from "@/lib/analytics.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3, ChevronDown } from "lucide-react";
+import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3, ChevronDown, Archive } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/leads/")({
@@ -202,10 +202,7 @@ function LeadsPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Leads</h1>
           <p className="text-xs text-muted-foreground stat-num">
-            {totalQ.data ?? "…"} total in pipeline ·{" "}
-            <Link to="/leads/archived" className="underline-offset-2 hover:underline hover:text-foreground">
-              Archived
-            </Link>
+            {totalQ.data ?? "…"} total in pipeline
           </p>
         </div>
         <div className="flex gap-2">
@@ -218,6 +215,14 @@ function LeadsPage() {
             <Upload className="size-4" />
             {importMut.isPending ? "Syncing…" : empty ? "Import from Notion" : "Re-sync Notion"}
           </button>
+          <Link
+            to="/leads/archived"
+            title="Archived leads"
+            aria-label="Archived leads"
+            className="inline-flex items-center justify-center bg-card border border-border rounded-md size-9 hover:border-primary"
+          >
+            <Archive className="size-4" />
+          </Link>
           <Link
             to="/leads/new"
             className="inline-flex items-center gap-1 bg-card border border-border rounded-md px-3 py-2 text-sm font-semibold hover:border-primary"
