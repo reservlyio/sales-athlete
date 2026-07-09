@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { importFromNotion } from "@/lib/notion-import.functions";
 import { analyzeObjections, generateCoaching } from "@/lib/analytics.functions";
-import { getCallStatus } from "@/lib/call-timezone";
+import { getCallStatus, getTimezoneLabel } from "@/lib/call-timezone";
 import { useServerFn } from "@tanstack/react-start";
 import { Search, Plus, Upload, Phone, Mail, CalendarClock, Clock, Sparkles, BarChart3, ChevronDown, Archive } from "lucide-react";
 import { toast } from "sonner";
@@ -154,9 +154,32 @@ function LeadsPage() {
 
   const displayList = useMemo(() => {
     const rows = listQ.data ?? [];
-    const withStatus = rows.map((l) => ({ lead: l, status: getCallStatus(l.location, l.phone, new Date(nowTick)) }));
+    const withStatus = rows.map((l) => ({ lead: l, status: getCallStatus(l.location, l.phone, new Date(nowTick)), groupHeader: null as string | null }));
     if (tab !== "all") return withStatus;
-    return withStatus.sort((a, b) => a.status.sortMinutes - b.status.sortMinutes);
+
+    const sorted = withStatus.sort((a, b) => a.status.sortMinutes - b.status.sortMinutes);
+
+    const groupSizes = new Map<string, number>();
+    for (const item of sorted) {
+      const key = item.status.timezone ?? "unknown";
+      groupSizes.set(key, (groupSizes.get(key) ?? 0) + 1);
+    }
+
+    let lastKey: string | null = null;
+    for (const item of sorted) {
+      const key = item.status.timezone ?? "unknown";
+      if (key !== lastKey) {
+        const count = groupSizes.get(key) ?? 0;
+        const statusPart = item.status.timezone
+          ? item.status.isOpenNow
+            ? "Open now"
+            : item.status.statusLabel
+          : "Can't verify";
+        item.groupHeader = `${getTimezoneLabel(item.status.timezone)} — ${statusPart} (${count})`;
+      }
+      lastKey = key;
+    }
+    return sorted;
   }, [listQ.data, tab, nowTick]);
 
   const runImport = useServerFn(importFromNotion);
@@ -312,7 +335,7 @@ function LeadsPage() {
               </div>
             ) : (
               <ul className="divide-y divide-border">
-                {displayList.map(({ lead: l, status: callStatus }) => {
+                {displayList.map(({ lead: l, status: callStatus, groupHeader }) => {
                   const fu = l.next_follow_up;
                   let fuBadge: { color: string; label: string } | null = null;
                   if (fu) {
@@ -323,6 +346,11 @@ function LeadsPage() {
                   const showFuBadge = fuBadge && (tab === "all" || tab === "followups");
                   return (
                     <li key={l.id}>
+                      {groupHeader && (
+                        <div className="px-4 md:px-3 pt-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground bg-muted/40">
+                          {groupHeader}
+                        </div>
+                      )}
                       <div className="flex items-center gap-3 md:gap-2 px-4 py-4 md:px-3 md:py-2.5 hover:bg-accent/30">
                         <Link to="/leads/$id" params={{ id: l.id }} className="min-w-0 flex-1">
                           <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-2">

@@ -242,6 +242,24 @@ const CITY_OVERRIDES: Record<string, string> = {
 // Idaho's default in STATE_TIMEZONE is Mountain (most of the population), so no
 // state-level change needed beyond the panhandle-city overrides above.
 
+const TIMEZONE_LABELS: Record<string, string> = {
+  "America/New_York": "Eastern",
+  "America/Chicago": "Central",
+  "America/Denver": "Mountain",
+  "America/Phoenix": "Mountain (Arizona)",
+  "America/Los_Angeles": "Pacific",
+  "America/Anchorage": "Alaska",
+  "Pacific/Honolulu": "Hawaii",
+  "America/Vancouver": "Pacific (Canada)",
+  "America/Edmonton": "Mountain (Canada)",
+  "America/Halifax": "Atlantic (Canada)",
+};
+
+export function getTimezoneLabel(timezone: string | null): string {
+  if (!timezone) return "Unknown time zone";
+  return TIMEZONE_LABELS[timezone] ?? timezone;
+}
+
 export type CallStatus = {
   timezone: string | null;
   isOpenNow: boolean;
