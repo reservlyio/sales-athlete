@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { STAGE_COLOR, STAGE_LABEL, todayISO, fmtDate } from "@/lib/crm";
 import { importFromNotion } from "@/lib/notion-import.functions";
 import { analyzeObjections, generateCoaching } from "@/lib/analytics.functions";
+import { getCallStatus } from "@/lib/call-timezone";
 import { useServerFn } from "@tanstack/react-start";
-import { Search, Plus, Upload, Phone, Mail, CalendarClock, Sparkles, BarChart3, ChevronDown, Archive } from "lucide-react";
+import { Search, Plus, Upload, Phone, Mail, CalendarClock, Clock, Sparkles, BarChart3, ChevronDown, Archive } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/leads/")({
@@ -144,6 +145,19 @@ function LeadsPage() {
       return (data ?? []) as Lead[];
     },
   });
+
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const displayList = useMemo(() => {
+    const rows = listQ.data ?? [];
+    const withStatus = rows.map((l) => ({ lead: l, status: getCallStatus(l.location, new Date(nowTick)) }));
+    if (tab !== "all") return withStatus;
+    return withStatus.sort((a, b) => a.status.sortMinutes - b.status.sortMinutes);
+  }, [listQ.data, tab, nowTick]);
 
   const runImport = useServerFn(importFromNotion);
   const importMut = useMutation({
@@ -292,13 +306,13 @@ function LeadsPage() {
           <div className="bg-card rounded-xl border border-border overflow-hidden">
             {listQ.isLoading ? (
               <div className="p-6 text-sm text-muted-foreground">Loading…</div>
-            ) : (listQ.data ?? []).length === 0 ? (
+            ) : displayList.length === 0 ? (
               <div className="p-10 text-center text-sm text-muted-foreground">
                 {empty ? "No leads yet. Import your Notion CRM above or add one manually." : "Nothing here."}
               </div>
             ) : (
               <ul className="divide-y divide-border">
-                {(listQ.data ?? []).map((l) => {
+                {displayList.map(({ lead: l, status: callStatus }) => {
                   const fu = l.next_follow_up;
                   let fuBadge: { color: string; label: string } | null = null;
                   if (fu) {
@@ -328,6 +342,22 @@ function LeadsPage() {
                               {showFuBadge && fuBadge && (
                                 <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${fuBadge.color}`}>
                                   <CalendarClock className="size-3" /> {fuBadge.label}
+                                </span>
+                              )}
+                              {tab === "all" && (
+                                <span
+                                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${
+                                    callStatus.isOpenNow
+                                      ? "bg-emerald-500/15 text-emerald-500"
+                                      : callStatus.timezone
+                                        ? "bg-muted text-muted-foreground"
+                                        : "bg-muted/50 text-muted-foreground/60"
+                                  }`}
+                                >
+                                  <Clock className="size-3" />
+                                  {callStatus.timezone
+                                    ? `${callStatus.statusLabel}${callStatus.isOpenNow ? " · " + callStatus.localTimeLabel : ""}`
+                                    : "Unknown time"}
                                 </span>
                               )}
                             </div>
