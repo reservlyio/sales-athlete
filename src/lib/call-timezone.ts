@@ -118,16 +118,32 @@ export type CallStatus = {
   sortMinutes: number; // minutes until close (if open) or until next open (if closed); Infinity if unknown
 };
 
+// Real lead data (from Notion) is "City, State, Country" or "State, Country" —
+// the country is always last, not the state. Strip it before reading the state.
+const COUNTRY_NOISE = new Set(["united states", "united states of america", "usa", "us"]);
+
 function resolveTimezone(location: string | null): string | null {
   if (!location) return null;
   const raw = location.trim().toLowerCase();
   if (!raw) return null;
 
-  if (CITY_OVERRIDES[raw]) return CITY_OVERRIDES[raw];
+  let segments = raw.split(",").map((p) => p.trim()).filter(Boolean);
+  if (segments.length === 0) return null;
 
-  const parts = raw.split(",").map((p) => p.trim());
-  const statePart = parts[parts.length - 1];
+  if (segments.length > 1 && COUNTRY_NOISE.has(segments[segments.length - 1])) {
+    segments = segments.slice(0, -1);
+  }
+  while (segments.length > 1 && /^\d{5}(-\d{4})?$/.test(segments[segments.length - 1])) {
+    segments = segments.slice(0, -1);
+  }
+
+  const statePart = segments[segments.length - 1];
   if (!statePart) return null;
+
+  if (segments.length > 1) {
+    const cityStateKey = `${segments[segments.length - 2]}, ${statePart}`;
+    if (CITY_OVERRIDES[cityStateKey]) return CITY_OVERRIDES[cityStateKey];
+  }
 
   if (STATE_TIMEZONE[statePart]) return STATE_TIMEZONE[statePart];
   if (statePart.length === 2 && STATE_ABBR_TIMEZONE[statePart]) return STATE_ABBR_TIMEZONE[statePart];
