@@ -154,7 +154,7 @@ function LeadsPage() {
 
   const displayList = useMemo(() => {
     const rows = listQ.data ?? [];
-    const withStatus = rows.map((l) => ({ lead: l, status: getCallStatus(l.location, new Date(nowTick)) }));
+    const withStatus = rows.map((l) => ({ lead: l, status: getCallStatus(l.location, l.phone, new Date(nowTick)) }));
     if (tab !== "all") return withStatus;
     return withStatus.sort((a, b) => a.status.sortMinutes - b.status.sortMinutes);
   }, [listQ.data, tab, nowTick]);
