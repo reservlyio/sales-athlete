@@ -18,6 +18,8 @@ const AREA_CODE_TIMEZONE: Record<string, string> = {
   226: "America/New_York", 229: "America/New_York", 231: "America/New_York", 234: "America/New_York",
   239: "America/New_York", 240: "America/New_York",
   248: "America/New_York", 249: "America/New_York", 252: "America/New_York", 260: "America/New_York",
+  540: "America/New_York", 574: "America/New_York", 603: "America/New_York", 631: "America/New_York",
+  765: "America/New_York", 865: "America/New_York", 906: "America/New_York",
   262: "America/Chicago", 267: "America/New_York", 269: "America/New_York", 272: "America/New_York",
   276: "America/New_York", 278: "America/New_York", 283: "America/New_York", 289: "America/New_York",
   301: "America/New_York", 302: "America/New_York", 304: "America/New_York", 305: "America/New_York",
@@ -56,8 +58,9 @@ const AREA_CODE_TIMEZONE: Record<string, string> = {
   954: "America/New_York", 959: "America/New_York", 973: "America/New_York", 978: "America/New_York",
   980: "America/New_York", 984: "America/New_York", 985: "America/Chicago", 989: "America/New_York",
   // Central
-  205: "America/Chicago", 214: "America/Chicago", 218: "America/Chicago", 225: "America/Chicago",
-  228: "America/Chicago", 251: "America/Chicago", 254: "America/Chicago",
+  205: "America/Chicago", 210: "America/Chicago", 214: "America/Chicago", 218: "America/Chicago",
+  225: "America/Chicago", 228: "America/Chicago", 251: "America/Chicago", 254: "America/Chicago",
+  701: "America/Chicago", 737: "America/Chicago",
   256: "America/Chicago", 270: "America/Chicago", 281: "America/Chicago", 306: "America/Chicago",
   308: "America/Chicago", 312: "America/Chicago", 314: "America/Chicago", 316: "America/Chicago",
   318: "America/Chicago", 319: "America/Chicago", 320: "America/Chicago", 325: "America/Chicago",
@@ -109,6 +112,8 @@ const AREA_CODE_TIMEZONE: Record<string, string> = {
   951: "America/Los_Angeles", 971: "America/Los_Angeles",
   // Alaska / Hawaii
   907: "America/Anchorage", 808: "Pacific/Honolulu",
+  // Canada (non-Mountain/Pacific — those are grouped above)
+  204: "America/Chicago", 416: "America/New_York", 506: "America/Halifax", 905: "America/New_York",
 };
 
 function extractAreaCode(phone: string | null): string | null {
