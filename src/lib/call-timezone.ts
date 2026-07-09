@@ -266,6 +266,10 @@ export type CallStatus = {
   localTimeLabel: string; // "2:14 PM" or "" if unknown
   statusLabel: string; // "Open now" | "Opens Mon 9:30 AM" | "Closed until tomorrow" | "Unknown time"
   sortMinutes: number; // minutes until close (if open) or until next open (if closed); Infinity if unknown
+  // "area_code" = confirmed from the number being dialed. "address" = the phone
+  // couldn't confirm it (toll-free or non-NANP), so this is just the stored
+  // address's zone and may not match where the line actually rings.
+  source: "area_code" | "address" | "unknown";
 };
 
 // Real lead data (from Notion) is "City, State, Country" or "State, Country" —
@@ -334,8 +338,10 @@ export function getCallStatus(location: string | null, phone: string | null, now
     );
   }
 
+  const source: CallStatus["source"] = areaCodeTz ? "area_code" : addressTz ? "address" : "unknown";
+
   if (!timezone) {
-    return { timezone: null, isOpenNow: false, localTimeLabel: "", statusLabel: "Unknown time", sortMinutes: Infinity };
+    return { timezone: null, isOpenNow: false, localTimeLabel: "", statusLabel: "Unknown time", sortMinutes: Infinity, source };
   }
 
   const { weekday, hour, minute } = getPartsInZone(now, timezone);
@@ -359,6 +365,7 @@ export function getCallStatus(location: string | null, phone: string | null, now
       localTimeLabel,
       statusLabel: "Open now",
       sortMinutes: closeMinutes - minutesNow,
+      source,
     };
   }
 
@@ -391,6 +398,7 @@ export function getCallStatus(location: string | null, phone: string | null, now
     localTimeLabel,
     statusLabel: label,
     sortMinutes: 1_000_000 + minutesUntilOpen, // always sorts after every open lead
+    source,
   };
 }
 

@@ -157,17 +157,23 @@ function LeadsPage() {
     const withStatus = rows.map((l) => ({ lead: l, status: getCallStatus(l.location, l.phone, new Date(nowTick)), groupHeader: null as string | null }));
     if (tab !== "all") return withStatus;
 
-    const sorted = withStatus.sort((a, b) => a.status.sortMinutes - b.status.sortMinutes);
+    const sourceRank = { area_code: 0, address: 1, unknown: 2 } as const;
+    const sorted = withStatus.sort((a, b) => {
+      if (a.status.sortMinutes !== b.status.sortMinutes) return a.status.sortMinutes - b.status.sortMinutes;
+      return sourceRank[a.status.source] - sourceRank[b.status.source];
+    });
+
+    const groupKeyOf = (s: (typeof sorted)[number]["status"]) => `${s.timezone ?? "unknown"}|${s.source}`;
 
     const groupSizes = new Map<string, number>();
     for (const item of sorted) {
-      const key = item.status.timezone ?? "unknown";
+      const key = groupKeyOf(item.status);
       groupSizes.set(key, (groupSizes.get(key) ?? 0) + 1);
     }
 
     let lastKey: string | null = null;
     for (const item of sorted) {
-      const key = item.status.timezone ?? "unknown";
+      const key = groupKeyOf(item.status);
       if (key !== lastKey) {
         const count = groupSizes.get(key) ?? 0;
         const statusPart = item.status.timezone
@@ -175,7 +181,8 @@ function LeadsPage() {
             ? "Open now"
             : item.status.statusLabel
           : "Can't verify";
-        item.groupHeader = `${getTimezoneLabel(item.status.timezone)} — ${statusPart} (${count})`;
+        const unverifiedSuffix = item.status.source === "address" ? " · unverified (address-based)" : "";
+        item.groupHeader = `${getTimezoneLabel(item.status.timezone)} — ${statusPart}${unverifiedSuffix} (${count})`;
       }
       lastKey = key;
     }
@@ -374,17 +381,24 @@ function LeadsPage() {
                               )}
                               {tab === "all" && (
                                 <span
+                                  title={
+                                    callStatus.source === "address"
+                                      ? "Couldn't confirm from the phone number (toll-free or non-US) — using the saved address instead, which may not match where the line actually rings."
+                                      : undefined
+                                  }
                                   className={`text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${
-                                    callStatus.isOpenNow
-                                      ? "bg-emerald-500/15 text-emerald-500"
-                                      : callStatus.timezone
-                                        ? "bg-muted text-muted-foreground"
-                                        : "bg-muted/50 text-muted-foreground/60"
+                                    callStatus.source === "address"
+                                      ? "bg-warning/15 text-warning border border-dashed border-warning/40"
+                                      : callStatus.isOpenNow
+                                        ? "bg-emerald-500/15 text-emerald-500"
+                                        : callStatus.timezone
+                                          ? "bg-muted text-muted-foreground"
+                                          : "bg-muted/50 text-muted-foreground/60"
                                   }`}
                                 >
                                   <Clock className="size-3" />
                                   {callStatus.timezone
-                                    ? `${callStatus.statusLabel}${callStatus.isOpenNow ? " · " + callStatus.localTimeLabel : ""}`
+                                    ? `${callStatus.statusLabel}${callStatus.isOpenNow ? " · " + callStatus.localTimeLabel : ""}${callStatus.source === "address" ? " · unverified" : ""}`
                                     : "Unknown time"}
                                 </span>
                               )}
