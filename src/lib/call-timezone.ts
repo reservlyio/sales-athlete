@@ -276,7 +276,7 @@ export type CallStatus = {
 // the country is always last, not the state. Strip it before reading the state.
 const COUNTRY_NOISE = new Set(["united states", "united states of america", "usa", "us"]);
 
-function resolveTimezoneFromAddress(location: string | null): string | null {
+function normalizeLocationSegments(location: string | null): string[] | null {
   if (!location) return null;
   const raw = location.trim().toLowerCase();
   if (!raw) return null;
@@ -290,6 +290,23 @@ function resolveTimezoneFromAddress(location: string | null): string | null {
   while (segments.length > 1 && /^\d{5}(-\d{4})?$/.test(segments[segments.length - 1])) {
     segments = segments.slice(0, -1);
   }
+  return segments;
+}
+
+// Looks up only the curated city-level exceptions (not the broader state default).
+// Used to correct AREA_CODE_TIMEZONE's single-zone default for area codes that are
+// known to straddle two timezones — see SPLIT_ZONE_AREA_CODES below.
+function resolveCityOverride(location: string | null): string | null {
+  const segments = normalizeLocationSegments(location);
+  if (!segments || segments.length < 2) return null;
+  const statePart = segments[segments.length - 1];
+  const cityStateKey = `${segments[segments.length - 2]}, ${statePart}`;
+  return CITY_OVERRIDES[cityStateKey] ?? null;
+}
+
+function resolveTimezoneFromAddress(location: string | null): string | null {
+  const segments = normalizeLocationSegments(location);
+  if (!segments || segments.length === 0) return null;
 
   const statePart = segments[segments.length - 1];
   if (!statePart) return null;
@@ -304,6 +321,13 @@ function resolveTimezoneFromAddress(location: string | null): string | null {
 
   return null;
 }
+
+// Area codes whose AREA_CODE_TIMEZONE entry is a population-majority default, not an
+// unambiguous zone (FL 850, ID 208, MI 906, NE 308, ND 701, SD 605 — see comment above
+// AREA_CODE_TIMEZONE). For these, the phone number alone can't tell us which side of the
+// split a lead is on, so a curated CITY_OVERRIDES match on the address is used to correct
+// the default instead of being discarded in favor of it.
+const SPLIT_ZONE_AREA_CODES = new Set(["208", "308", "605", "701", "850", "906"]);
 
 function getPartsInZone(date: Date, timeZone: string) {
   const fmt = new Intl.DateTimeFormat("en-US", {
@@ -330,7 +354,7 @@ const CLOSE_MINUTE = 0;
 export function getCallStatus(location: string | null, phone: string | null, now: Date = new Date()): CallStatus {
   const areaCodeTz = resolveTimezoneFromAreaCode(phone);
   const addressTz = resolveTimezoneFromAddress(location);
-  const timezone = areaCodeTz ?? addressTz;
+  let timezone = areaCodeTz ?? addressTz;
 
   if (areaCodeTz && addressTz && areaCodeTz !== addressTz) {
     console.warn(
@@ -339,6 +363,19 @@ export function getCallStatus(location: string | null, phone: string | null, now
   }
 
   const source: CallStatus["source"] = areaCodeTz ? "area_code" : addressTz ? "address" : "unknown";
+
+  // Split-zone area codes resolve to a majority-population default above, which is wrong
+  // for leads on the minority side. A curated city-level match (not the broader state
+  // default) is trusted to correct it, since it's what CITY_OVERRIDES exists for.
+  if (areaCodeTz && source === "area_code") {
+    const areaCode = extractAreaCode(phone);
+    if (areaCode && SPLIT_ZONE_AREA_CODES.has(areaCode)) {
+      const cityOverrideTz = resolveCityOverride(location);
+      if (cityOverrideTz && cityOverrideTz !== areaCodeTz) {
+        timezone = cityOverrideTz;
+      }
+    }
+  }
 
   if (!timezone) {
     return { timezone: null, isOpenNow: false, localTimeLabel: "", statusLabel: "Unknown time", sortMinutes: Infinity, source };
