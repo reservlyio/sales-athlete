@@ -326,11 +326,6 @@ function LeadsPage() {
                     else fuBadge = { color: "bg-primary/15 text-primary", label: `Follow up ${fmtDate(fu)}` };
                   }
                   const showFuBadge = fuBadge && (tab === "all" || tab === "followups");
-                  const timeLabel = callStatus.timezone
-                    ? callStatus.isOpenNow
-                      ? `${callStatus.statusLabel} · ${callStatus.localTimeLabel}`
-                      : `Currently ${callStatus.localTimeLabel} · ${callStatus.statusLabel}`
-                    : "Unknown time";
                   return (
                     <li key={l.id}>
                       <div className="flex items-center gap-3 md:gap-2 px-4 py-4 md:px-3 md:py-2.5 hover:bg-accent/30">
@@ -354,26 +349,36 @@ function LeadsPage() {
                                   <CalendarClock className="size-3" /> {fuBadge.label}
                                 </span>
                               )}
-                              {tab === "all" && (
-                                <span
-                                  title={
-                                    callStatus.source === "address"
-                                      ? "Couldn't confirm from the phone number (toll-free or non-US) — using the saved address instead, which may not match where the line actually rings."
-                                      : undefined
-                                  }
-                                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${
-                                    callStatus.source === "address"
-                                      ? "bg-warning/15 text-warning border border-dashed border-warning/40"
-                                      : callStatus.isOpenNow
-                                        ? "bg-emerald-500/15 text-emerald-500"
-                                        : callStatus.timezone
-                                          ? "bg-muted text-muted-foreground"
-                                          : "bg-muted/50 text-muted-foreground/60"
-                                  }`}
-                                >
-                                  <Clock className="size-3" />
-                                  {timeLabel}
-                                  {callStatus.source === "address" ? " · unverified" : ""}
+                              {tab === "all" && callStatus.timezone && (
+                                <>
+                                  <span
+                                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                                      callStatus.isOpenNow ? "bg-emerald-500/15 text-emerald-500" : "bg-muted text-muted-foreground"
+                                    }`}
+                                  >
+                                    {callStatus.isOpenNow ? "Open now" : callStatus.statusLabel}
+                                  </span>
+                                  <span
+                                    title={
+                                      callStatus.source === "address"
+                                        ? "Couldn't confirm from the phone number (toll-free or non-US) — using the saved address instead, which may not match where the line actually rings."
+                                        : undefined
+                                    }
+                                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${
+                                      callStatus.source === "address"
+                                        ? "bg-warning/15 text-warning border border-dashed border-warning/40"
+                                        : "bg-muted text-muted-foreground"
+                                    }`}
+                                  >
+                                    <Clock className="size-3" />
+                                    {callStatus.localTimeLabel}
+                                    {callStatus.source === "address" ? " · unverified" : ""}
+                                  </span>
+                                </>
+                              )}
+                              {tab === "all" && !callStatus.timezone && (
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1 bg-muted/50 text-muted-foreground/60">
+                                  <Clock className="size-3" /> Unknown time
                                 </span>
                               )}
                             </div>
