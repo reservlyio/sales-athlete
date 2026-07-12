@@ -326,6 +326,11 @@ function LeadsPage() {
                     else fuBadge = { color: "bg-primary/15 text-primary", label: `Follow up ${fmtDate(fu)}` };
                   }
                   const showFuBadge = fuBadge && (tab === "all" || tab === "followups");
+                  const timeLabel = callStatus.timezone
+                    ? callStatus.isOpenNow
+                      ? `${callStatus.statusLabel} · ${callStatus.localTimeLabel}`
+                      : `Currently ${callStatus.localTimeLabel} · ${callStatus.statusLabel}`
+                    : "Unknown time";
                   return (
                     <li key={l.id}>
                       <div className="flex items-center gap-3 md:gap-2 px-4 py-4 md:px-3 md:py-2.5 hover:bg-accent/30">
@@ -367,9 +372,8 @@ function LeadsPage() {
                                   }`}
                                 >
                                   <Clock className="size-3" />
-                                  {callStatus.timezone
-                                    ? `${callStatus.statusLabel}${callStatus.isOpenNow ? " · " + callStatus.localTimeLabel : ""}${callStatus.source === "address" ? " · unverified" : ""}`
-                                    : "Unknown time"}
+                                  {timeLabel}
+                                  {callStatus.source === "address" ? " · unverified" : ""}
                                 </span>
                               )}
                             </div>
