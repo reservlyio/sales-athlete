@@ -352,13 +352,6 @@ function LeadsPage() {
                               {tab === "all" && callStatus.timezone && (
                                 <>
                                   <span
-                                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                                      callStatus.isOpenNow ? "bg-emerald-500/15 text-emerald-500" : "bg-muted text-muted-foreground"
-                                    }`}
-                                  >
-                                    {callStatus.isOpenNow ? "Open now" : callStatus.statusLabel}
-                                  </span>
-                                  <span
                                     title={
                                       callStatus.source === "address"
                                         ? "Couldn't confirm from the phone number (toll-free or non-US) — using the saved address instead, which may not match where the line actually rings."
@@ -373,6 +366,13 @@ function LeadsPage() {
                                     <Clock className="size-3" />
                                     {callStatus.localTimeLabel}
                                     {callStatus.source === "address" ? " · unverified" : ""}
+                                  </span>
+                                  <span
+                                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                                      callStatus.isOpenNow ? "bg-emerald-500/15 text-emerald-500" : "bg-muted text-muted-foreground"
+                                    }`}
+                                  >
+                                    {callStatus.isOpenNow ? "Open now" : callStatus.statusLabel}
                                   </span>
                                 </>
                               )}
