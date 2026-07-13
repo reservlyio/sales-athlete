@@ -330,7 +330,7 @@ function LeadsPage() {
                     <li key={l.id}>
                       <div className="flex items-center gap-3 md:gap-2 px-4 py-4 md:px-3 md:py-2.5 hover:bg-accent/30">
                         <Link to="/leads/$id" params={{ id: l.id }} className="min-w-0 flex-1">
-                          <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-2">
+                          <div className="flex flex-col gap-1.5">
                             <span className="font-medium truncate">{l.company}</span>
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {(() => {
