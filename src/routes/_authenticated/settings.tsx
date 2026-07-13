@@ -36,11 +36,14 @@ function getVideoEmbedUrl(url: string, startSec: number | null, endSec: number |
   if (!url) return null;
   try {
     const u = new URL(url);
-    const hostname = u.hostname.replace(/^www\./, "");
+    const hostname = u.hostname.replace(/^www\./, "").replace(/^m\./, "");
 
     let id: string | null = null;
-    if (hostname === "youtube.com") id = u.searchParams.get("v");
-    else if (hostname === "youtu.be") id = u.pathname.slice(1).split("/")[0] || null;
+    if (hostname === "youtube.com") {
+      id = u.pathname.startsWith("/shorts/") ? u.pathname.split("/")[2] || null : u.searchParams.get("v");
+    } else if (hostname === "youtu.be") {
+      id = u.pathname.slice(1).split("/")[0] || null;
+    }
 
     if (id) {
       const params = new URLSearchParams();
@@ -285,21 +288,37 @@ function SettingsPage() {
                     Good-delivery examples to reference later — just for you, not shown anywhere else.
                   </p>
                   {referenceUrls.length > 0 && (
-                    <ul className="space-y-1.5">
-                      {referenceUrls.map((url, i) => (
-                        <li key={i} className="flex items-center gap-2 text-xs">
-                          <a href={url} target="_blank" rel="noreferrer" className="flex-1 truncate text-primary hover:underline">
-                            {url}
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => removeReference(i)}
-                            className="text-muted-foreground hover:text-destructive shrink-0"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        </li>
-                      ))}
+                    <ul className="space-y-3">
+                      {referenceUrls.map((url, i) => {
+                        const preview = getVideoEmbedUrl(url, null, null);
+                        return (
+                          <li key={i} className="space-y-1.5">
+                            <div className="flex items-center gap-2 text-xs">
+                              <a href={url} target="_blank" rel="noreferrer" className="flex-1 truncate text-primary hover:underline">
+                                {url}
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => removeReference(i)}
+                                className="text-muted-foreground hover:text-destructive shrink-0"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                            {preview && (
+                              <div className="aspect-video rounded-md overflow-hidden border border-border">
+                                <iframe
+                                  src={preview}
+                                  title={`Reference clip ${i + 1}`}
+                                  className="w-full h-full"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                />
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                   <div className="flex gap-2">
