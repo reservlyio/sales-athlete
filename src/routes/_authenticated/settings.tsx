@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { toast } from "sonner";
-import { ChevronDown, Video, Link2, FileText, X } from "lucide-react";
+import { ChevronDown, Video, Link2, FileText, X, Pencil } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 
@@ -103,6 +103,7 @@ function SettingsPage() {
   const [trainingOpen, setTrainingOpen] = useState(false);
   const [referenceUrls, setReferenceUrls] = useState<string[]>([]);
   const [newReferenceUrl, setNewReferenceUrl] = useState("");
+  const [trimOpen, setTrimOpen] = useState(false);
   const [referencesOpen, setReferencesOpen] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
   const [scriptPath, setScriptPath] = useState<string | null>(null);
@@ -126,6 +127,7 @@ function SettingsPage() {
       setPendingScriptFile(null);
       setRemoveScript(false);
       setTrainingOpen(false);
+      setTrimOpen(false);
       setReferencesOpen(false);
       setScriptOpen(false);
     }
@@ -232,30 +234,19 @@ function SettingsPage() {
                   />
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-muted-foreground">Start at</label>
-                  <Input
-                    placeholder="e.g. 1:30"
-                    value={videoStart}
-                    onChange={(e) => setVideoStart(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">
-                    End at{videoUrl.includes("vimeo.com") ? " (YouTube only)" : ""}
-                  </label>
-                  <Input
-                    placeholder="e.g. 4:00"
-                    value={videoEnd}
-                    onChange={(e) => setVideoEnd(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-
               <div className="pt-2 border-t border-border/60 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTrimOpen((v) => !v)}
+                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
+                    trimOpen
+                      ? "bg-primary/10 border-primary/40 text-primary"
+                      : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Trim{startSec !== null || endSec !== null ? " ✓" : ""}
+                </button>
                 <button
                   type="button"
                   onClick={() => setReferencesOpen((v) => !v)}
@@ -281,6 +272,31 @@ function SettingsPage() {
                   My script{scriptFilename || pendingScriptFile ? " ✓" : ""}
                 </button>
               </div>
+
+              {trimOpen && (
+                <div className="grid grid-cols-2 gap-2 rounded-md bg-muted/30 p-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Start at</label>
+                    <Input
+                      placeholder="e.g. 1:30"
+                      value={videoStart}
+                      onChange={(e) => setVideoStart(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">
+                      End at{videoUrl.includes("vimeo.com") ? " (YouTube only)" : ""}
+                    </label>
+                    <Input
+                      placeholder="e.g. 4:00"
+                      value={videoEnd}
+                      onChange={(e) => setVideoEnd(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              )}
 
               {referencesOpen && (
                 <div className="space-y-2 rounded-md bg-muted/30 p-3">
