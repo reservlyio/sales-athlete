@@ -1,12 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { todayISO, fmtDate } from "@/lib/crm";
-import { Flame, Trophy, Target, Phone, ChevronDown, Video } from "lucide-react";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { Input } from "@/components/ui/input";
+import { Flame, Trophy, Target, Phone } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({ meta: [{ title: "Today — Sales Command Center" }] }),
@@ -26,33 +24,6 @@ function startOfWeek(d: Date) {
 }
 function toISO(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function getVideoEmbedUrl(url: string): string | null {
-  if (!url) return null;
-  try {
-    const u = new URL(url);
-    const hostname = u.hostname.replace(/^www\./, "");
-
-    if (hostname === "youtube.com") {
-      const id = u.searchParams.get("v");
-      if (!id) return null;
-      return `https://www.youtube.com/embed/${id}`;
-    }
-    if (hostname === "youtu.be") {
-      const id = u.pathname.slice(1).split("/")[0];
-      if (!id) return null;
-      return `https://www.youtube.com/embed/${id}`;
-    }
-    if (hostname === "vimeo.com") {
-      const id = u.pathname.slice(1).split("/")[0];
-      if (!id || !/^\d+$/.test(id)) return null;
-      return `https://player.vimeo.com/video/${id}`;
-    }
-    return null;
-  } catch {
-    return null;
-  }
 }
 
 function computeStreak(byDay: Map<string, number>, goal: number, workDays: number[]) {
@@ -76,59 +47,6 @@ function computeStreak(byDay: Map<string, number>, goal: number, workDays: numbe
     if (streak > 365) break;
   }
   return streak;
-}
-
-const TRAINING_VIDEO_URL_KEY = "training-video-url";
-
-function TrainingCard() {
-  const [open, setOpen] = useState(false);
-  const [url, setUrl] = useState("");
-  const embedUrl = useMemo(() => getVideoEmbedUrl(url), [url]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem(TRAINING_VIDEO_URL_KEY);
-    if (saved) setUrl(saved);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(TRAINING_VIDEO_URL_KEY, url);
-  }, [url]);
-
-  return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <div className="bg-card rounded-xl border border-border p-4">
-        <CollapsibleTrigger className="w-full flex items-center justify-between cursor-pointer">
-          <div className="flex items-center gap-2">
-            <Video className="h-6 w-6 text-green-500" />
-            <span className="font-bold">Training</span>
-          </div>
-          <ChevronDown
-            className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-          />
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div className="mt-4 space-y-3">
-            <Input
-              placeholder="Paste a YouTube or Vimeo URL…"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
-            {embedUrl && (
-              <div className="aspect-video rounded-md overflow-hidden border border-border -mx-4">
-                <iframe
-                  src={embedUrl}
-                  title="Training video"
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            )}
-          </div>
-        </CollapsibleContent>
-      </div>
-    </Collapsible>
-  );
 }
 
 function Dashboard() {
@@ -254,11 +172,6 @@ function Dashboard() {
           </div>
           {newRecord && <div className="mt-2 text-xs font-bold text-warning">🏆 New record</div>}
         </div>
-      </div>
-
-      {/* Training */}
-      <div className="mt-12 mb-8">
-        <TrainingCard />
       </div>
 
       {/* Dial CTA */}
