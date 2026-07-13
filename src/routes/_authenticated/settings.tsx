@@ -94,7 +94,45 @@ function SettingsPage() {
     <AppShell>
       <h1 className="text-2xl md:text-3xl font-bold mb-5">Settings</h1>
 
-      <section className="bg-card border border-border rounded-xl p-5 mb-4">
+      <Collapsible open={trainingOpen} onOpenChange={setTrainingOpen}>
+        <div className="bg-card border border-border rounded-xl p-4 mb-8">
+          <CollapsibleTrigger className="w-full flex items-center justify-between cursor-pointer">
+            <div className="flex items-center gap-2">
+              <Video className="h-5 w-5 text-green-500" />
+              <span className="font-semibold">Training</span>
+            </div>
+            <ChevronDown
+              className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${trainingOpen ? "rotate-180" : ""}`}
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <p className="text-xs text-muted-foreground mt-3 mb-2">
+              Paste a training video link — saved to your account in the cloud, so it shows up the same on every
+              device you sign in on, not just this browser.
+            </p>
+            <div className="space-y-3">
+              <Input
+                placeholder="Paste a YouTube or Vimeo URL…"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+              />
+              {embedUrl && (
+                <div className="aspect-video rounded-md overflow-hidden border border-border">
+                  <iframe
+                    src={embedUrl}
+                    title="Training video"
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              )}
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
+
+      <section className="bg-card border border-border rounded-xl p-5 mb-8">
         <h2 className="font-semibold mb-1">Daily call goal</h2>
         <p className="text-xs text-muted-foreground mb-3">Streak only continues when this is hit.</p>
         <div className="flex gap-2 mb-3">
@@ -120,7 +158,7 @@ function SettingsPage() {
         />
       </section>
 
-      <section className="bg-card border border-border rounded-xl p-5 mb-4">
+      <section className="bg-card border border-border rounded-xl p-5 mb-8">
         <h2 className="font-semibold mb-1">Work days</h2>
         <p className="text-xs text-muted-foreground mb-3">
           Non-work days don't break your streak.
@@ -141,43 +179,6 @@ function SettingsPage() {
           ))}
         </div>
       </section>
-
-      <Collapsible open={trainingOpen} onOpenChange={setTrainingOpen}>
-        <div className="bg-card border border-border rounded-xl p-4 mb-4">
-          <CollapsibleTrigger className="w-full flex items-center justify-between cursor-pointer">
-            <div className="flex items-center gap-2">
-              <Video className="h-5 w-5 text-green-500" />
-              <span className="font-semibold">Training</span>
-            </div>
-            <ChevronDown
-              className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${trainingOpen ? "rotate-180" : ""}`}
-            />
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <p className="text-xs text-muted-foreground mt-3 mb-2">
-              Paste a training video link — saved to your account, so it shows up on every device you sign in on.
-            </p>
-            <div className="space-y-3">
-              <Input
-                placeholder="Paste a YouTube or Vimeo URL…"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-              />
-              {embedUrl && (
-                <div className="aspect-video rounded-md overflow-hidden border border-border">
-                  <iframe
-                    src={embedUrl}
-                    title="Training video"
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              )}
-            </div>
-          </CollapsibleContent>
-        </div>
-      </Collapsible>
 
       <button
         onClick={() => save.mutate()}
