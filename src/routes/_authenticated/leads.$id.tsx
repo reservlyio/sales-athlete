@@ -148,7 +148,7 @@ function LeadDetail() {
       </header>
 
       {/* Quick contact */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-8">
         {lead.phone && (
           <a href={`tel:${lead.phone}`} className="bg-primary text-primary-foreground rounded-md py-2.5 px-3 text-sm font-semibold flex items-center justify-center gap-1.5">
             <Phone className="size-4" /> Call
@@ -343,7 +343,7 @@ function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () =
     return (
       <button
         onClick={() => setOpen(true)}
-        className="w-full bg-primary text-primary-foreground rounded-xl py-3 font-semibold mb-4 flex items-center justify-center gap-2"
+        className="w-full bg-primary text-primary-foreground rounded-xl py-3 font-semibold mb-8 flex items-center justify-center gap-2"
       >
         <Phone className="size-4" /> Log a call
       </button>
@@ -351,7 +351,7 @@ function LogCallPanel({ lead, onLogged, autoOpen }: { lead: Lead; onLogged: () =
   }
 
   return (
-    <section className="bg-card border-2 border-primary rounded-xl p-5 mb-4 space-y-7">
+    <section className="bg-card border-2 border-primary rounded-xl p-5 mb-8 space-y-7">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">Log call</h3>
         <button onClick={() => setOpen(false)} className="text-muted-foreground"><X className="size-4" /></button>
