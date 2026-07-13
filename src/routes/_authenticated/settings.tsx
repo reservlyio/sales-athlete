@@ -145,11 +145,7 @@ function SettingsPage() {
             />
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <p className="text-xs text-muted-foreground mt-3 mb-2">
-              Paste a training video link — saved to your account in the cloud, so it shows up the same on every
-              device you sign in on, not just this browser.
-            </p>
-            <div className="space-y-3">
+            <div className="space-y-3 mt-3">
               <Input
                 placeholder="Paste a YouTube or Vimeo URL…"
                 value={videoUrl}
