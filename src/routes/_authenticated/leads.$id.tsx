@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter, useCanGoBack } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +47,8 @@ function LeadDetail() {
   const { logCall } = Route.useSearch();
   const qc = useQueryClient();
   const nav = useNavigate();
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
 
   const shouldAutoOpen = useRef(logCall === "1");
 
@@ -114,9 +116,13 @@ function LeadDetail() {
 
   return (
     <AppShell>
-      <Link to="/leads" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
+      <button
+        type="button"
+        onClick={() => (canGoBack ? router.history.back() : nav({ to: "/leads" }))}
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
+      >
         <ArrowLeft className="size-4" /> Leads
-      </Link>
+      </button>
 
       <header className="mb-5">
         <div className="flex items-center justify-between gap-2 mb-3">
