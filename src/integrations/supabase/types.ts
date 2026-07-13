@@ -18,6 +18,9 @@ export type Database = {
         Row: {
           daily_goal: number
           id: number
+          training_reference_urls: string[]
+          training_script_filename: string | null
+          training_script_path: string | null
           training_video_end_sec: number | null
           training_video_start_sec: number | null
           training_video_url: string | null
@@ -27,6 +30,9 @@ export type Database = {
         Insert: {
           daily_goal?: number
           id?: number
+          training_reference_urls?: string[]
+          training_script_filename?: string | null
+          training_script_path?: string | null
           training_video_end_sec?: number | null
           training_video_start_sec?: number | null
           training_video_url?: string | null
@@ -36,6 +42,9 @@ export type Database = {
         Update: {
           daily_goal?: number
           id?: number
+          training_reference_urls?: string[]
+          training_script_filename?: string | null
+          training_script_path?: string | null
           training_video_end_sec?: number | null
           training_video_start_sec?: number | null
           training_video_url?: string | null

@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { toast } from "sonner";
-import { ChevronDown, Video } from "lucide-react";
+import { ChevronDown, Video, Link2, FileText, X } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
+
+const TRAINING_FILES_BUCKET = "training-files";
 
 // Accepts "90", "1:30", or "1:02:30" and returns whole seconds, or null if empty/invalid.
 function parseTimeToSeconds(input: string): number | null {
@@ -84,6 +86,9 @@ function SettingsPage() {
         training_video_url: string | null;
         training_video_start_sec: number | null;
         training_video_end_sec: number | null;
+        training_reference_urls: string[];
+        training_script_path: string | null;
+        training_script_filename: string | null;
       };
     },
   });
@@ -93,6 +98,15 @@ function SettingsPage() {
   const [videoStart, setVideoStart] = useState<string>("");
   const [videoEnd, setVideoEnd] = useState<string>("");
   const [trainingOpen, setTrainingOpen] = useState(false);
+  const [referenceUrls, setReferenceUrls] = useState<string[]>([]);
+  const [newReferenceUrl, setNewReferenceUrl] = useState("");
+  const [referencesOpen, setReferencesOpen] = useState(false);
+  const [scriptOpen, setScriptOpen] = useState(false);
+  const [scriptPath, setScriptPath] = useState<string | null>(null);
+  const [scriptFilename, setScriptFilename] = useState<string | null>(null);
+  const [pendingScriptFile, setPendingScriptFile] = useState<File | null>(null);
+  const [removeScript, setRemoveScript] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const startSec = useMemo(() => parseTimeToSeconds(videoStart), [videoStart]);
   const endSec = useMemo(() => parseTimeToSeconds(videoEnd), [videoEnd]);
   const embedUrl = useMemo(() => getVideoEmbedUrl(videoUrl, startSec, endSec), [videoUrl, startSec, endSec]);
@@ -103,12 +117,62 @@ function SettingsPage() {
       setVideoUrl(settings.data.training_video_url ?? "");
       setVideoStart(formatSecondsToTime(settings.data.training_video_start_sec));
       setVideoEnd(formatSecondsToTime(settings.data.training_video_end_sec));
+      setReferenceUrls(settings.data.training_reference_urls ?? []);
+      setScriptPath(settings.data.training_script_path ?? null);
+      setScriptFilename(settings.data.training_script_filename ?? null);
+      setPendingScriptFile(null);
+      setRemoveScript(false);
       setTrainingOpen(false);
+      setReferencesOpen(false);
+      setScriptOpen(false);
     }
   }, [settings.data]);
 
+  const addReference = () => {
+    const trimmed = newReferenceUrl.trim();
+    if (!trimmed) return;
+    setReferenceUrls((prev) => [...prev, trimmed]);
+    setNewReferenceUrl("");
+  };
+  const removeReference = (idx: number) => setReferenceUrls((prev) => prev.filter((_, i) => i !== idx));
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPendingScriptFile(file);
+      setRemoveScript(false);
+    }
+    e.target.value = "";
+  };
+
+  async function downloadScript() {
+    if (!scriptPath) return;
+    const { data, error } = await supabase.storage.from(TRAINING_FILES_BUCKET).createSignedUrl(scriptPath, 60);
+    if (error || !data) { toast.error("Couldn't generate a download link"); return; }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
+
   const save = useMutation({
     mutationFn: async () => {
+      let newScriptPath = scriptPath;
+      let newScriptFilename = scriptFilename;
+
+      if (pendingScriptFile) {
+        const ext = pendingScriptFile.name.split(".").pop() || "bin";
+        const path = `script/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from(TRAINING_FILES_BUCKET)
+          .upload(path, pendingScriptFile, { upsert: true });
+        if (upErr) throw upErr;
+        if (scriptPath) await supabase.storage.from(TRAINING_FILES_BUCKET).remove([scriptPath]);
+        newScriptPath = path;
+        newScriptFilename = pendingScriptFile.name;
+      } else if (removeScript && scriptPath) {
+        await supabase.storage.from(TRAINING_FILES_BUCKET).remove([scriptPath]);
+        newScriptPath = null;
+        newScriptFilename = null;
+      }
+
       const { error } = await supabase
         .from("app_settings")
         .update({
@@ -117,6 +181,9 @@ function SettingsPage() {
           training_video_url: videoUrl.trim() || null,
           training_video_start_sec: startSec,
           training_video_end_sec: endSec,
+          training_reference_urls: referenceUrls,
+          training_script_path: newScriptPath,
+          training_script_filename: newScriptFilename,
           updated_at: new Date().toISOString(),
         })
         .eq("id", 1);
@@ -184,6 +251,128 @@ function SettingsPage() {
                   />
                 </div>
               </div>
+
+              <div className="pt-2 border-t border-border/60 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setReferencesOpen((v) => !v)}
+                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
+                    referencesOpen
+                      ? "bg-primary/10 border-primary/40 text-primary"
+                      : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                  Reference clips{referenceUrls.length > 0 ? ` (${referenceUrls.length})` : ""}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScriptOpen((v) => !v)}
+                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
+                    scriptOpen
+                      ? "bg-primary/10 border-primary/40 text-primary"
+                      : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  My script{scriptFilename || pendingScriptFile ? " ✓" : ""}
+                </button>
+              </div>
+
+              {referencesOpen && (
+                <div className="space-y-2 rounded-md bg-muted/30 p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Good-delivery examples to reference later — just for you, not shown anywhere else.
+                  </p>
+                  {referenceUrls.length > 0 && (
+                    <ul className="space-y-1.5">
+                      {referenceUrls.map((url, i) => (
+                        <li key={i} className="flex items-center gap-2 text-xs">
+                          <a href={url} target="_blank" rel="noreferrer" className="flex-1 truncate text-primary hover:underline">
+                            {url}
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => removeReference(i)}
+                            className="text-muted-foreground hover:text-destructive shrink-0"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Paste a link…"
+                      value={newReferenceUrl}
+                      onChange={(e) => setNewReferenceUrl(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") { e.preventDefault(); addReference(); }
+                      }}
+                      className="text-xs h-8"
+                    />
+                    <button
+                      type="button"
+                      onClick={addReference}
+                      className="text-xs font-semibold px-3 rounded-md bg-primary text-primary-foreground shrink-0"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {scriptOpen && (
+                <div className="space-y-2 rounded-md bg-muted/30 p-3">
+                  <p className="text-xs text-muted-foreground">Your actual call script — PDF, Word, or text file.</p>
+                  {pendingScriptFile ? (
+                    <div className="flex items-center gap-2 text-xs">
+                      <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span className="flex-1 truncate">Will upload on save: {pendingScriptFile.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setPendingScriptFile(null)}
+                        className="text-muted-foreground hover:text-destructive shrink-0"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : scriptFilename && !removeScript ? (
+                    <div className="flex items-center gap-2 text-xs">
+                      <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <button type="button" onClick={downloadScript} className="flex-1 truncate text-left text-primary hover:underline">
+                        {scriptFilename}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRemoveScript(true)}
+                        className="text-muted-foreground hover:text-destructive shrink-0"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">
+                      {removeScript ? "Will remove on save." : "No script uploaded yet."}
+                    </p>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-md bg-primary text-primary-foreground"
+                  >
+                    {scriptFilename || pendingScriptFile ? "Replace file" : "Upload file"}
+                  </button>
+                </div>
+              )}
             </div>
           </CollapsibleContent>
         </div>
