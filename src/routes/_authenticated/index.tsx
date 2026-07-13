@@ -148,7 +148,7 @@ function Dashboard() {
       </section>
 
       {/* Streak + week */}
-      <div className="grid grid-cols-2 gap-3 md:gap-4 mb-8">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 mb-16">
         <div className="bg-card rounded-xl p-5 border border-border">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
             <Flame className="size-4 text-streak" /> Current streak
