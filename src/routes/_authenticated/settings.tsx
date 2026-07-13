@@ -66,7 +66,7 @@ function SettingsPage() {
       setGoal(settings.data.daily_goal);
       setDays(settings.data.work_days);
       setVideoUrl(settings.data.training_video_url ?? "");
-      setTrainingOpen(!!settings.data.training_video_url);
+      setTrainingOpen(false);
     }
   }, [settings.data]);
 
