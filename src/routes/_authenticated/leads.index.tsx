@@ -383,9 +383,6 @@ function LeadsPage() {
                               )}
                             </div>
                           </div>
-                          <div className="text-xs text-muted-foreground truncate stat-num mt-1.5 md:mt-0.5">
-                            {[l.contact_name, l.phone, l.location].filter(Boolean).join(" · ")}
-                          </div>
                         </Link>
                         <div className="flex flex-col md:flex-row gap-3 shrink-0">
                           <button
