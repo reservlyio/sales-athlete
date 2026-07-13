@@ -151,28 +151,6 @@ function SettingsPage() {
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
               />
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-muted-foreground">Start at (mm:ss, optional)</label>
-                  <Input
-                    placeholder="e.g. 1:30"
-                    value={videoStart}
-                    onChange={(e) => setVideoStart(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">
-                    End at (mm:ss, optional{videoUrl.includes("vimeo.com") ? " — YouTube only" : ""})
-                  </label>
-                  <Input
-                    placeholder="e.g. 4:00"
-                    value={videoEnd}
-                    onChange={(e) => setVideoEnd(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-              </div>
               {embedUrl && (
                 <div className="aspect-video rounded-md overflow-hidden border border-border">
                   <iframe
@@ -184,6 +162,28 @@ function SettingsPage() {
                   />
                 </div>
               )}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">Start at</label>
+                  <Input
+                    placeholder="e.g. 1:30"
+                    value={videoStart}
+                    onChange={(e) => setVideoStart(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">
+                    End at{videoUrl.includes("vimeo.com") ? " (YouTube only)" : ""}
+                  </label>
+                  <Input
+                    placeholder="e.g. 4:00"
+                    value={videoEnd}
+                    onChange={(e) => setVideoEnd(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
             </div>
           </CollapsibleContent>
         </div>
