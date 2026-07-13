@@ -13,6 +13,9 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/leads/")({
   head: () => ({ meta: [{ title: "Leads — Sales Command Center" }] }),
+  validateSearch: (search: Record<string, unknown>): { q?: string } => ({
+    q: typeof search.q === "string" ? search.q : undefined,
+  }),
   component: LeadsPage,
 });
 
@@ -47,9 +50,12 @@ const TABS: { id: Tab; label: string }[] = [
 function LeadsPage() {
   const qc = useQueryClient();
   const nav = useNavigate();
+  const { q } = Route.useSearch();
+  const search = q ?? "";
   const [tab, setTab] = useState<Tab>("all");
   const [limit, setLimit] = useState(50);
-  const [search, setSearch] = useState("");
+  const setSearch = (value: string) =>
+    nav({ to: "/leads", search: { q: value || undefined }, replace: true });
 
   const totalQ = useQuery({
     queryKey: ["leads-total"],
