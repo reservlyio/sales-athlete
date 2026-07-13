@@ -126,7 +126,7 @@ function SettingsPage() {
       setScriptFilename(settings.data.training_script_filename ?? null);
       setPendingScriptFile(null);
       setRemoveScript(false);
-      setTrainingOpen(false);
+      setTrainingOpen(!settings.data.training_video_url);
       setActivePanel(null);
     }
   }, [settings.data]);
@@ -216,11 +216,6 @@ function SettingsPage() {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="space-y-3 mt-3">
-              <Input
-                placeholder="Paste a YouTube or Vimeo URL…"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-              />
               {embedUrl && (
                 <div className="aspect-video rounded-md overflow-hidden border border-border">
                   <iframe
@@ -232,6 +227,11 @@ function SettingsPage() {
                   />
                 </div>
               )}
+              <Input
+                placeholder="Paste a YouTube or Vimeo URL…"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+              />
               <div className="pt-2 border-t border-border/60 flex items-center gap-2">
                 <button
                   type="button"

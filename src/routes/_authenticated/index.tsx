@@ -177,12 +177,12 @@ function Dashboard() {
       {/* Dial CTA */}
       <Link
         to="/leads"
-        className="group flex items-center justify-center gap-2 mb-4 rounded-full px-5 py-3.5 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.01] active:scale-[0.99] transition-all"
+        className="group flex items-center justify-center gap-2 mb-4 rounded-full px-5 py-3.5 bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.01] active:scale-[0.99] transition-all"
       >
         <Flame className="size-6 shrink-0 group-hover:animate-pulse" />
         <span className="flex flex-col items-start leading-tight">
           <span className="text-sm">Start Dialing</span>
-          <span className="text-xs font-semibold text-white/90">Let's crush today →</span>
+          <span className="text-xs font-semibold text-primary-foreground/90">Let's crush today →</span>
         </span>
       </Link>
     </AppShell>
