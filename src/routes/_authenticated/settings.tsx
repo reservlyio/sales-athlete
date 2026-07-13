@@ -1,9 +1,39 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { toast } from "sonner";
+import { ChevronDown, Video } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
+
+function getVideoEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const hostname = u.hostname.replace(/^www\./, "");
+
+    if (hostname === "youtube.com") {
+      const id = u.searchParams.get("v");
+      if (!id) return null;
+      return `https://www.youtube.com/embed/${id}`;
+    }
+    if (hostname === "youtu.be") {
+      const id = u.pathname.slice(1).split("/")[0];
+      if (!id) return null;
+      return `https://www.youtube.com/embed/${id}`;
+    }
+    if (hostname === "vimeo.com") {
+      const id = u.pathname.slice(1).split("/")[0];
+      if (!id || !/^\d+$/.test(id)) return null;
+      return `https://player.vimeo.com/video/${id}`;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings" }] }),
@@ -23,15 +53,20 @@ function SettingsPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from("app_settings").select("*").eq("id", 1).single();
       if (error) throw error;
-      return data as { daily_goal: number; work_days: number[] };
+      return data as { daily_goal: number; work_days: number[]; training_video_url: string | null };
     },
   });
   const [goal, setGoal] = useState<number>(50);
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [videoUrl, setVideoUrl] = useState<string>("");
+  const [trainingOpen, setTrainingOpen] = useState(false);
+  const embedUrl = useMemo(() => getVideoEmbedUrl(videoUrl), [videoUrl]);
   useEffect(() => {
     if (settings.data) {
       setGoal(settings.data.daily_goal);
       setDays(settings.data.work_days);
+      setVideoUrl(settings.data.training_video_url ?? "");
+      setTrainingOpen(!!settings.data.training_video_url);
     }
   }, [settings.data]);
 
@@ -39,7 +74,12 @@ function SettingsPage() {
     mutationFn: async () => {
       const { error } = await supabase
         .from("app_settings")
-        .update({ daily_goal: goal, work_days: days, updated_at: new Date().toISOString() })
+        .update({
+          daily_goal: goal,
+          work_days: days,
+          training_video_url: videoUrl.trim() || null,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", 1);
       if (error) throw error;
     },
@@ -101,6 +141,43 @@ function SettingsPage() {
           ))}
         </div>
       </section>
+
+      <Collapsible open={trainingOpen} onOpenChange={setTrainingOpen}>
+        <div className="bg-card border border-border rounded-xl p-4 mb-4">
+          <CollapsibleTrigger className="w-full flex items-center justify-between cursor-pointer">
+            <div className="flex items-center gap-2">
+              <Video className="h-5 w-5 text-green-500" />
+              <span className="font-semibold">Training</span>
+            </div>
+            <ChevronDown
+              className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${trainingOpen ? "rotate-180" : ""}`}
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <p className="text-xs text-muted-foreground mt-3 mb-2">
+              Paste a training video link — saved to your account, so it shows up on every device you sign in on.
+            </p>
+            <div className="space-y-3">
+              <Input
+                placeholder="Paste a YouTube or Vimeo URL…"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+              />
+              {embedUrl && (
+                <div className="aspect-video rounded-md overflow-hidden border border-border">
+                  <iframe
+                    src={embedUrl}
+                    title="Training video"
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              )}
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
 
       <button
         onClick={() => save.mutate()}

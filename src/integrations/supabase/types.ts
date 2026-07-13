@@ -18,18 +18,21 @@ export type Database = {
         Row: {
           daily_goal: number
           id: number
+          training_video_url: string | null
           updated_at: string
           work_days: number[]
         }
         Insert: {
           daily_goal?: number
           id?: number
+          training_video_url?: string | null
           updated_at?: string
           work_days?: number[]
         }
         Update: {
           daily_goal?: number
           id?: number
+          training_video_url?: string | null
           updated_at?: string
           work_days?: number[]
         }
