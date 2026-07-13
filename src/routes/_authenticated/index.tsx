@@ -269,7 +269,7 @@ function Dashboard() {
         <Flame className="size-6 shrink-0 group-hover:animate-pulse" />
         <span className="flex flex-col items-start leading-tight">
           <span className="text-sm">Start Dialing</span>
-          <span className="text-[9px] font-normal text-white/60">Let's crush today →</span>
+          <span className="text-xs font-semibold text-white/90">Let's crush today →</span>
         </span>
       </Link>
     </AppShell>
