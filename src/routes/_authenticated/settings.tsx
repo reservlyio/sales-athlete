@@ -126,7 +126,7 @@ function SettingsPage() {
       setScriptFilename(settings.data.training_script_filename ?? null);
       setPendingScriptFile(null);
       setRemoveScript(false);
-      setTrainingOpen(!settings.data.training_video_url);
+      setTrainingOpen(false);
       setActivePanel(null);
     }
   }, [settings.data]);
@@ -431,10 +431,8 @@ function SettingsPage() {
           onChange={(e) => setGoal(Math.max(1, Number(e.target.value) || 1))}
           className="w-full mt-1 bg-input border border-border rounded-md px-3 py-2 text-sm stat-num"
         />
-      </section>
 
-      <section className="bg-card border border-border rounded-xl p-5 mb-8">
-        <h2 className="font-semibold mb-1">Work days</h2>
+        <h2 className="font-semibold mb-1 mt-5">Work days</h2>
         <p className="text-xs text-muted-foreground mb-3">
           Non-work days don't break your streak.
         </p>
