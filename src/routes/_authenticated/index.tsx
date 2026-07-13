@@ -256,6 +256,18 @@ function Dashboard() {
         </div>
       </div>
 
+      {/* Dial CTA */}
+      <Link
+        to="/leads"
+        className="group flex items-center justify-center gap-3 mb-4 rounded-xl px-5 py-5 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:scale-[1.01] active:scale-[0.99] transition-all"
+      >
+        <Flame className="size-6 shrink-0 group-hover:animate-pulse" />
+        <span className="flex flex-col items-start leading-tight">
+          <span className="text-lg">Start Dialing</span>
+          <span className="text-xs font-medium text-white/80">Let's crush today →</span>
+        </span>
+      </Link>
+
       {/* Training */}
       <div className="mt-12 mb-12">
         <TrainingCard />
