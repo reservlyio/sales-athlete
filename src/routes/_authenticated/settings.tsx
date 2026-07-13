@@ -232,7 +232,7 @@ function SettingsPage() {
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
               />
-              <div className="pt-2 border-t border-border/60 flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => togglePanel("trim")}
@@ -272,7 +272,7 @@ function SettingsPage() {
               </div>
 
               {activePanel === "trim" && (
-                <div className="grid grid-cols-2 gap-2 rounded-md bg-muted/30 p-3">
+                <div className="grid grid-cols-2 gap-2 rounded-md bg-muted/30 p-3 mt-3">
                   <div>
                     <label className="text-xs text-muted-foreground">Start at</label>
                     <Input
@@ -297,10 +297,7 @@ function SettingsPage() {
               )}
 
               {activePanel === "references" && (
-                <div className="space-y-2 rounded-md bg-muted/30 p-3">
-                  <p className="text-xs text-muted-foreground">
-                    Good-delivery examples to reference later — just for you, not shown anywhere else.
-                  </p>
+                <div className="space-y-2 rounded-md bg-muted/30 p-3 mt-3">
                   {referenceUrls.length > 0 && (
                     <ul className="space-y-3">
                       {referenceUrls.map((url, i) => {
@@ -357,7 +354,7 @@ function SettingsPage() {
               )}
 
               {activePanel === "script" && (
-                <div className="space-y-2 rounded-md bg-muted/30 p-3">
+                <div className="space-y-2 rounded-md bg-muted/30 p-3 mt-3">
                   <p className="text-xs text-muted-foreground">Your actual call script — PDF, Word, or text file.</p>
                   {pendingScriptFile ? (
                     <div className="flex items-center gap-2 text-xs">
