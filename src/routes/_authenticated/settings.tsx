@@ -103,9 +103,9 @@ function SettingsPage() {
   const [trainingOpen, setTrainingOpen] = useState(false);
   const [referenceUrls, setReferenceUrls] = useState<string[]>([]);
   const [newReferenceUrl, setNewReferenceUrl] = useState("");
-  const [trimOpen, setTrimOpen] = useState(false);
-  const [referencesOpen, setReferencesOpen] = useState(false);
-  const [scriptOpen, setScriptOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<"trim" | "references" | "script" | null>(null);
+  const togglePanel = (panel: "trim" | "references" | "script") =>
+    setActivePanel((prev) => (prev === panel ? null : panel));
   const [scriptPath, setScriptPath] = useState<string | null>(null);
   const [scriptFilename, setScriptFilename] = useState<string | null>(null);
   const [pendingScriptFile, setPendingScriptFile] = useState<File | null>(null);
@@ -127,9 +127,7 @@ function SettingsPage() {
       setPendingScriptFile(null);
       setRemoveScript(false);
       setTrainingOpen(false);
-      setTrimOpen(false);
-      setReferencesOpen(false);
-      setScriptOpen(false);
+      setActivePanel(null);
     }
   }, [settings.data]);
 
@@ -237,9 +235,9 @@ function SettingsPage() {
               <div className="pt-2 border-t border-border/60 flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setTrimOpen((v) => !v)}
+                  onClick={() => togglePanel("trim")}
                   className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
-                    trimOpen
+                    activePanel === "trim"
                       ? "bg-primary/10 border-primary/40 text-primary"
                       : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
                   }`}
@@ -249,9 +247,9 @@ function SettingsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setReferencesOpen((v) => !v)}
+                  onClick={() => togglePanel("references")}
                   className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
-                    referencesOpen
+                    activePanel === "references"
                       ? "bg-primary/10 border-primary/40 text-primary"
                       : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
                   }`}
@@ -261,9 +259,9 @@ function SettingsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setScriptOpen((v) => !v)}
+                  onClick={() => togglePanel("script")}
                   className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
-                    scriptOpen
+                    activePanel === "script"
                       ? "bg-primary/10 border-primary/40 text-primary"
                       : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
                   }`}
@@ -273,7 +271,7 @@ function SettingsPage() {
                 </button>
               </div>
 
-              {trimOpen && (
+              {activePanel === "trim" && (
                 <div className="grid grid-cols-2 gap-2 rounded-md bg-muted/30 p-3">
                   <div>
                     <label className="text-xs text-muted-foreground">Start at</label>
@@ -298,7 +296,7 @@ function SettingsPage() {
                 </div>
               )}
 
-              {referencesOpen && (
+              {activePanel === "references" && (
                 <div className="space-y-2 rounded-md bg-muted/30 p-3">
                   <p className="text-xs text-muted-foreground">
                     Good-delivery examples to reference later — just for you, not shown anywhere else.
@@ -358,7 +356,7 @@ function SettingsPage() {
                 </div>
               )}
 
-              {scriptOpen && (
+              {activePanel === "script" && (
                 <div className="space-y-2 rounded-md bg-muted/30 p-3">
                   <p className="text-xs text-muted-foreground">Your actual call script — PDF, Word, or text file.</p>
                   {pendingScriptFile ? (
@@ -387,11 +385,7 @@ function SettingsPage() {
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground italic">
-                      {removeScript ? "Will remove on save." : "No script uploaded yet."}
-                    </p>
-                  )}
+                  ) : null}
                   <input
                     ref={fileInputRef}
                     type="file"
