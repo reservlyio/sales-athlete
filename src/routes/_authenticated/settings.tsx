@@ -8,26 +8,51 @@ import { ChevronDown, Video } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 
-function getVideoEmbedUrl(url: string): string | null {
+// Accepts "90", "1:30", or "1:02:30" and returns whole seconds, or null if empty/invalid.
+function parseTimeToSeconds(input: string): number | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  const parts = trimmed.split(":").map((p) => p.trim());
+  if (parts.some((p) => p === "" || !/^\d+$/.test(p))) return null;
+  const nums = parts.map(Number);
+  if (nums.length === 1) return nums[0];
+  if (nums.length === 2) return nums[0] * 60 + nums[1];
+  if (nums.length === 3) return nums[0] * 3600 + nums[1] * 60 + nums[2];
+  return null;
+}
+
+function formatSecondsToTime(sec: number | null): string {
+  if (sec === null || sec < 0) return "";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function getVideoEmbedUrl(url: string, startSec: number | null, endSec: number | null): string | null {
   if (!url) return null;
   try {
     const u = new URL(url);
     const hostname = u.hostname.replace(/^www\./, "");
 
-    if (hostname === "youtube.com") {
-      const id = u.searchParams.get("v");
-      if (!id) return null;
-      return `https://www.youtube.com/embed/${id}`;
+    let id: string | null = null;
+    if (hostname === "youtube.com") id = u.searchParams.get("v");
+    else if (hostname === "youtu.be") id = u.pathname.slice(1).split("/")[0] || null;
+
+    if (id) {
+      const params = new URLSearchParams();
+      if (startSec !== null) params.set("start", String(startSec));
+      if (endSec !== null) params.set("end", String(endSec));
+      const query = params.toString();
+      return `https://www.youtube.com/embed/${id}${query ? `?${query}` : ""}`;
     }
-    if (hostname === "youtu.be") {
-      const id = u.pathname.slice(1).split("/")[0];
-      if (!id) return null;
-      return `https://www.youtube.com/embed/${id}`;
-    }
+
     if (hostname === "vimeo.com") {
-      const id = u.pathname.slice(1).split("/")[0];
-      if (!id || !/^\d+$/.test(id)) return null;
-      return `https://player.vimeo.com/video/${id}`;
+      const vid = u.pathname.slice(1).split("/")[0];
+      if (!vid || !/^\d+$/.test(vid)) return null;
+      // Vimeo's embed only supports a start offset via the #t= fragment, not an end time.
+      return `https://player.vimeo.com/video/${vid}${startSec !== null ? `#t=${startSec}s` : ""}`;
     }
     return null;
   } catch {
@@ -53,19 +78,31 @@ function SettingsPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from("app_settings").select("*").eq("id", 1).single();
       if (error) throw error;
-      return data as { daily_goal: number; work_days: number[]; training_video_url: string | null };
+      return data as {
+        daily_goal: number;
+        work_days: number[];
+        training_video_url: string | null;
+        training_video_start_sec: number | null;
+        training_video_end_sec: number | null;
+      };
     },
   });
   const [goal, setGoal] = useState<number>(50);
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [videoUrl, setVideoUrl] = useState<string>("");
+  const [videoStart, setVideoStart] = useState<string>("");
+  const [videoEnd, setVideoEnd] = useState<string>("");
   const [trainingOpen, setTrainingOpen] = useState(false);
-  const embedUrl = useMemo(() => getVideoEmbedUrl(videoUrl), [videoUrl]);
+  const startSec = useMemo(() => parseTimeToSeconds(videoStart), [videoStart]);
+  const endSec = useMemo(() => parseTimeToSeconds(videoEnd), [videoEnd]);
+  const embedUrl = useMemo(() => getVideoEmbedUrl(videoUrl, startSec, endSec), [videoUrl, startSec, endSec]);
   useEffect(() => {
     if (settings.data) {
       setGoal(settings.data.daily_goal);
       setDays(settings.data.work_days);
       setVideoUrl(settings.data.training_video_url ?? "");
+      setVideoStart(formatSecondsToTime(settings.data.training_video_start_sec));
+      setVideoEnd(formatSecondsToTime(settings.data.training_video_end_sec));
       setTrainingOpen(false);
     }
   }, [settings.data]);
@@ -78,6 +115,8 @@ function SettingsPage() {
           daily_goal: goal,
           work_days: days,
           training_video_url: videoUrl.trim() || null,
+          training_video_start_sec: startSec,
+          training_video_end_sec: endSec,
           updated_at: new Date().toISOString(),
         })
         .eq("id", 1);
@@ -116,6 +155,28 @@ function SettingsPage() {
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
               />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">Start at (mm:ss, optional)</label>
+                  <Input
+                    placeholder="e.g. 1:30"
+                    value={videoStart}
+                    onChange={(e) => setVideoStart(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">
+                    End at (mm:ss, optional{videoUrl.includes("vimeo.com") ? " — YouTube only" : ""})
+                  </label>
+                  <Input
+                    placeholder="e.g. 4:00"
+                    value={videoEnd}
+                    onChange={(e) => setVideoEnd(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
               {embedUrl && (
                 <div className="aspect-video rounded-md overflow-hidden border border-border">
                   <iframe

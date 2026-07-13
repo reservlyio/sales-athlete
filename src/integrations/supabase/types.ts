@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           daily_goal: number
           id: number
+          training_video_end_sec: number | null
+          training_video_start_sec: number | null
           training_video_url: string | null
           updated_at: string
           work_days: number[]
@@ -25,6 +27,8 @@ export type Database = {
         Insert: {
           daily_goal?: number
           id?: number
+          training_video_end_sec?: number | null
+          training_video_start_sec?: number | null
           training_video_url?: string | null
           updated_at?: string
           work_days?: number[]
@@ -32,6 +36,8 @@ export type Database = {
         Update: {
           daily_goal?: number
           id?: number
+          training_video_end_sec?: number | null
+          training_video_start_sec?: number | null
           training_video_url?: string | null
           updated_at?: string
           work_days?: number[]
