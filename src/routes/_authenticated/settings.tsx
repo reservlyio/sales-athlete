@@ -245,7 +245,7 @@ function SettingsPage() {
                   }`}
                 >
                   <Pencil className="h-3.5 w-3.5" />
-                  Trim{startSec !== null || endSec !== null ? " ✓" : ""}
+                  Trim
                 </button>
                 <button
                   type="button"
@@ -269,7 +269,7 @@ function SettingsPage() {
                   }`}
                 >
                   <FileText className="h-3.5 w-3.5" />
-                  My script{scriptFilename || pendingScriptFile ? " ✓" : ""}
+                  My script
                 </button>
               </div>
 
