@@ -132,6 +132,72 @@ function resolveTimezoneFromAreaCode(phone: string | null): string | null {
   return AREA_CODE_TIMEZONE[Number(areaCode)] ?? null;
 }
 
+// Non-NANP country calling codes -> a single representative IANA timezone.
+// Many of these countries span multiple zones; this picks the zone covering
+// the capital/largest population center, same population-majority approach
+// used for split NANP area codes above. Only used when the number isn't a
+// +1 (NANP) number, and always surfaced as "unverified" (source: "address")
+// since a phone's country code doesn't guarantee where the line rings
+// (VOIP/forwarding) — it's just a better guess than assuming a US address.
+const COUNTRY_CODE_TIMEZONE: Record<string, string> = {
+  "44": "Europe/London", // UK
+  "49": "Europe/Berlin", // Germany
+  "33": "Europe/Paris", // France
+  "34": "Europe/Madrid", // Spain
+  "39": "Europe/Rome", // Italy
+  "31": "Europe/Amsterdam", // Netherlands
+  "32": "Europe/Brussels", // Belgium
+  "41": "Europe/Zurich", // Switzerland
+  "43": "Europe/Vienna", // Austria
+  "46": "Europe/Stockholm", // Sweden
+  "47": "Europe/Oslo", // Norway
+  "45": "Europe/Copenhagen", // Denmark
+  "358": "Europe/Helsinki", // Finland
+  "351": "Europe/Lisbon", // Portugal
+  "353": "Europe/Dublin", // Ireland
+  "48": "Europe/Warsaw", // Poland
+  "30": "Europe/Athens", // Greece
+  "7": "Europe/Moscow", // Russia
+  "90": "Europe/Istanbul", // Turkey
+  "52": "America/Mexico_City", // Mexico
+  "55": "America/Sao_Paulo", // Brazil
+  "54": "America/Argentina/Buenos_Aires", // Argentina
+  "56": "America/Santiago", // Chile
+  "57": "America/Bogota", // Colombia
+  "51": "America/Lima", // Peru
+  "61": "Australia/Sydney", // Australia
+  "64": "Pacific/Auckland", // New Zealand
+  "81": "Asia/Tokyo", // Japan
+  "82": "Asia/Seoul", // South Korea
+  "86": "Asia/Shanghai", // China
+  "91": "Asia/Kolkata", // India
+  "65": "Asia/Singapore", // Singapore
+  "852": "Asia/Hong_Kong", // Hong Kong
+  "63": "Asia/Manila", // Philippines
+  "66": "Asia/Bangkok", // Thailand
+  "84": "Asia/Ho_Chi_Minh", // Vietnam
+  "62": "Asia/Jakarta", // Indonesia
+  "971": "Asia/Dubai", // UAE
+  "966": "Asia/Riyadh", // Saudi Arabia
+  "972": "Asia/Jerusalem", // Israel
+  "27": "Africa/Johannesburg", // South Africa
+  "20": "Africa/Cairo", // Egypt
+  "234": "Africa/Lagos", // Nigeria
+};
+
+// Sorted longest-prefix-first so 3-digit codes (e.g. 971) are tried before
+// any shorter code that happens to share the same leading digits.
+const COUNTRY_CODE_PREFIXES = Object.keys(COUNTRY_CODE_TIMEZONE).sort((a, b) => b.length - a.length);
+
+function resolveTimezoneFromCountryCode(phone: string | null): string | null {
+  if (!phone) return null;
+  const trimmed = phone.trim();
+  if (!trimmed.startsWith("+") || trimmed.startsWith("+1")) return null; // NANP handled separately
+  const digits = trimmed.slice(1).replace(/\D/g, "");
+  const prefix = COUNTRY_CODE_PREFIXES.find((code) => digits.startsWith(code));
+  return prefix ? COUNTRY_CODE_TIMEZONE[prefix] : null;
+}
+
 const STATE_TIMEZONE: Record<string, string> = {
   alabama: "America/Chicago",
   alaska: "America/Anchorage",
@@ -353,8 +419,11 @@ const CLOSE_MINUTE = 0;
 
 export function getCallStatus(location: string | null, phone: string | null, now: Date = new Date()): CallStatus {
   const areaCodeTz = resolveTimezoneFromAreaCode(phone);
+  const countryCodeTz = resolveTimezoneFromCountryCode(phone);
   const addressTz = resolveTimezoneFromAddress(location);
-  let timezone = areaCodeTz ?? addressTz;
+  // Prefer a non-NANP country code over the address guess — a foreign
+  // number's country tells us more than a US mailing address does.
+  let timezone = areaCodeTz ?? countryCodeTz ?? addressTz;
 
   if (areaCodeTz && addressTz && areaCodeTz !== addressTz) {
     console.warn(
@@ -362,7 +431,7 @@ export function getCallStatus(location: string | null, phone: string | null, now
     );
   }
 
-  const source: CallStatus["source"] = areaCodeTz ? "area_code" : addressTz ? "address" : "unknown";
+  const source: CallStatus["source"] = areaCodeTz ? "area_code" : (countryCodeTz ?? addressTz) ? "address" : "unknown";
 
   // Split-zone area codes resolve to a majority-population default above, which is wrong
   // for leads on the minority side. A curated city-level match (not the broader state
