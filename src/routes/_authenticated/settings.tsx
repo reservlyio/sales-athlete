@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { toast } from "sonner";
-import { ChevronDown, Video, Link2, FileText, X, Pencil } from "lucide-react";
+import { ChevronDown, Video, Link2, FileText, X, Pencil, Target } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 
@@ -101,6 +101,7 @@ function SettingsPage() {
   const [videoStart, setVideoStart] = useState<string>("");
   const [videoEnd, setVideoEnd] = useState<string>("");
   const [trainingOpen, setTrainingOpen] = useState(false);
+  const [prefsOpen, setPrefsOpen] = useState(false);
   const [referenceUrls, setReferenceUrls] = useState<string[]>([]);
   const [newReferenceUrl, setNewReferenceUrl] = useState("");
   const [activePanel, setActivePanel] = useState<"trim" | "references" | "script" | null>(null);
@@ -217,7 +218,7 @@ function SettingsPage() {
           <CollapsibleContent>
             <div className="space-y-3 mt-3">
               {embedUrl && (
-                <div className="aspect-video rounded-md overflow-hidden border border-border">
+                <div className="aspect-video rounded-md overflow-hidden border border-border mb-2">
                   <iframe
                     src={embedUrl}
                     title="Training video"
@@ -227,11 +228,6 @@ function SettingsPage() {
                   />
                 </div>
               )}
-              <Input
-                placeholder="Paste a YouTube or Vimeo URL…"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-              />
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -270,6 +266,12 @@ function SettingsPage() {
                   My script
                 </button>
               </div>
+
+              <Input
+                placeholder="Paste a YouTube or Vimeo URL…"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+              />
 
               {activePanel === "trim" && (
                 <div className="grid grid-cols-2 gap-2 rounded-md bg-muted/30 p-3 mt-3">
@@ -404,51 +406,66 @@ function SettingsPage() {
         </div>
       </Collapsible>
 
-      <section className="bg-card border border-border rounded-xl p-5 mb-8">
-        <h2 className="font-semibold mb-1">Daily call goal</h2>
-        <p className="text-xs text-muted-foreground mb-3">Streak only continues when this is hit.</p>
-        <div className="flex gap-2 mb-3">
-          {PRESETS.map((n) => (
-            <button
-              key={n}
-              onClick={() => setGoal(n)}
-              className={`flex-1 py-2.5 rounded-md text-sm font-semibold stat-num border ${
-                goal === n ? "bg-primary text-primary-foreground border-primary" : "bg-input border-border"
-              }`}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-        <label className="text-xs text-muted-foreground">Custom</label>
-        <input
-          type="number"
-          min={1}
-          value={goal}
-          onChange={(e) => setGoal(Math.max(1, Number(e.target.value) || 1))}
-          className="w-full mt-1 bg-input border border-border rounded-md px-3 py-2 text-sm stat-num"
-        />
+      <Collapsible open={prefsOpen} onOpenChange={setPrefsOpen}>
+        <div className="bg-card border border-border rounded-xl p-4 mb-8">
+          <CollapsibleTrigger className="w-full flex items-center justify-between cursor-pointer">
+            <div className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              <span className="font-semibold">Goal &amp; work days</span>
+            </div>
+            <ChevronDown
+              className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${prefsOpen ? "rotate-180" : ""}`}
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-3">
+              <h2 className="font-semibold mb-1">Daily call goal</h2>
+              <p className="text-xs text-muted-foreground mb-3">Streak only continues when this is hit.</p>
+              <div className="flex gap-2 mb-3">
+                {PRESETS.map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setGoal(n)}
+                    className={`flex-1 py-2.5 rounded-md text-sm font-semibold stat-num border ${
+                      goal === n ? "bg-primary text-primary-foreground border-primary" : "bg-input border-border"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <label className="text-xs text-muted-foreground">Custom</label>
+              <input
+                type="number"
+                min={1}
+                value={goal}
+                onChange={(e) => setGoal(Math.max(1, Number(e.target.value) || 1))}
+                className="w-full mt-1 bg-input border border-border rounded-md px-3 py-2 text-sm stat-num"
+              />
 
-        <h2 className="font-semibold mb-1 mt-5">Work days</h2>
-        <p className="text-xs text-muted-foreground mb-3">
-          Non-work days don't break your streak.
-        </p>
-        <div className="grid grid-cols-7 gap-1.5">
-          {DAY_ORDER.map((i, pos) => (
-            <button
-              key={i}
-              onClick={() => toggleDay(i)}
-              className={`py-2.5 rounded-md text-xs font-semibold border ${
-                days.includes(i)
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-input border-border text-muted-foreground"
-              }`}
-            >
-              {DAY_NAMES[pos]}
-            </button>
-          ))}
+              <h2 className="font-semibold mb-1 mt-5">Work days</h2>
+              <p className="text-xs text-muted-foreground mb-3">
+                Non-work days don't break your streak.
+              </p>
+              <div className="grid grid-cols-7 gap-1.5">
+                {DAY_ORDER.map((i, pos) => (
+                  <button
+                    key={i}
+                    onClick={() => toggleDay(i)}
+                    className={`py-2.5 rounded-md text-xs font-semibold border ${
+                      days.includes(i)
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-input border-border text-muted-foreground"
+                    }`}
+                  >
+                    {DAY_NAMES[pos]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </CollapsibleContent>
         </div>
-      </section>
+      </Collapsible>
 
       <button
         onClick={() => save.mutate()}
