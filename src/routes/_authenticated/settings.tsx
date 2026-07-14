@@ -373,7 +373,7 @@ function SettingsPage() {
 
               {activePanel === "script" && (
                 <div className="space-y-2 rounded-md bg-muted/30 p-3 mt-3">
-                  <p className="text-xs text-muted-foreground mb-4">Your actual call script — PDF, Word, or text file.</p>
+                  <p className="text-xs text-muted-foreground mb-7">Your actual call script — PDF, Word, or text file.</p>
                   {pendingScriptFile ? (
                     <div className="flex items-center gap-2 text-xs">
                       <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
