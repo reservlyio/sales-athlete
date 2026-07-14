@@ -164,11 +164,15 @@ function LeadsPage() {
     if (tab !== "all") return withStatus;
 
     const sourceRank = { area_code: 0, address: 1, unknown: 2 } as const;
+    const isDue = (l: Lead) => !!l.next_follow_up && l.next_follow_up <= today;
     return withStatus.sort((a, b) => {
+      const aDue = isDue(a.lead);
+      const bDue = isDue(b.lead);
+      if (aDue !== bDue) return aDue ? -1 : 1;
       if (a.status.sortMinutes !== b.status.sortMinutes) return a.status.sortMinutes - b.status.sortMinutes;
       return sourceRank[a.status.source] - sourceRank[b.status.source];
     });
-  }, [listQ.data, tab, nowTick]);
+  }, [listQ.data, tab, nowTick, today]);
 
   const runImport = useServerFn(importFromNotion);
   const importMut = useMutation({
