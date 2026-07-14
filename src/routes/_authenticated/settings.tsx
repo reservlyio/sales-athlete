@@ -104,8 +104,8 @@ function SettingsPage() {
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [referenceUrls, setReferenceUrls] = useState<string[]>([]);
   const [newReferenceUrl, setNewReferenceUrl] = useState("");
-  const [activePanel, setActivePanel] = useState<"trim" | "references" | "script" | null>(null);
-  const togglePanel = (panel: "trim" | "references" | "script") =>
+  const [activePanel, setActivePanel] = useState<"link" | "trim" | "references" | "script" | null>(null);
+  const togglePanel = (panel: "link" | "trim" | "references" | "script") =>
     setActivePanel((prev) => (prev === panel ? null : panel));
   const [scriptPath, setScriptPath] = useState<string | null>(null);
   const [scriptFilename, setScriptFilename] = useState<string | null>(null);
@@ -228,7 +228,19 @@ function SettingsPage() {
                   />
                 </div>
               )}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => togglePanel("link")}
+                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
+                    activePanel === "link"
+                      ? "bg-primary/10 border-primary/40 text-primary"
+                      : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                  Link
+                </button>
                 <button
                   type="button"
                   onClick={() => togglePanel("trim")}
@@ -267,11 +279,16 @@ function SettingsPage() {
                 </button>
               </div>
 
-              <Input
-                placeholder="Paste a YouTube or Vimeo URL…"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-              />
+              {activePanel === "link" && (
+                <div className="rounded-md bg-muted/30 p-3 mt-3">
+                  <Input
+                    placeholder="Paste a YouTube or Vimeo URL…"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+              )}
 
               {activePanel === "trim" && (
                 <div className="grid grid-cols-2 gap-2 rounded-md bg-muted/30 p-3 mt-3">
