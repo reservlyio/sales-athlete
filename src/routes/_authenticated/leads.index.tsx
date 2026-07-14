@@ -336,7 +336,6 @@ function LeadsPage() {
                     else fuBadge = { color: "bg-primary/15 text-primary", label: `Follow up ${fmtDate(fu)}` };
                   }
                   const showFuBadge = fuBadge && (tab === "all" || tab === "followups");
-                  const hasDueFollowUp = !!fu && fu <= today;
                   return (
                     <li key={l.id}>
                       <div className="flex items-center gap-3 md:gap-2 px-4 py-4 md:px-3 md:py-2.5 hover:bg-accent/30">
@@ -399,7 +398,7 @@ function LeadsPage() {
                           <button
                             onClick={(e) => {
                               e.preventDefault();
-                              if (l.called && !hasDueFollowUp) {
+                              if (tab === "called" && l.called) {
                                 if (confirm("Undo this call? This clears its call history and moves it back to All Leads.")) {
                                   undoCall.mutate(l);
                                 }
@@ -407,7 +406,7 @@ function LeadsPage() {
                               }
                               nav({ to: "/leads/$id", params: { id: l.id }, search: { logCall: "1" } });
                             }}
-                            title={l.called && !hasDueFollowUp ? "Undo call — move back to All Leads" : "Go to lead and log a call"}
+                            title={tab === "called" && l.called ? "Undo call — move back to All Leads" : "Go to lead and log a call"}
                             className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 md:px-4 md:py-2 rounded-full border transition-all select-none ${
                               l.called ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-muted/70 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
                             }`}
