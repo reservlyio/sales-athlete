@@ -217,7 +217,7 @@ function SettingsPage() {
           <CollapsibleContent>
             <div className="space-y-3 mt-3">
               {embedUrl && (
-                <div className="aspect-[4/3] sm:aspect-video rounded-md overflow-hidden border border-border mb-4">
+                <div className="aspect-video rounded-md overflow-hidden border border-border mb-4">
                   <iframe
                     src={embedUrl}
                     title="Training video"
@@ -227,11 +227,11 @@ function SettingsPage() {
                   />
                 </div>
               )}
-              <div className="flex items-center gap-2 flex-wrap mt-5 sm:mt-3">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:flex-wrap mt-8 sm:mt-3">
                 <button
                   type="button"
                   onClick={() => togglePanel("link")}
-                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
+                  className={`inline-flex items-center justify-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
                     activePanel === "link"
                       ? "bg-primary/10 border-primary/40 text-primary"
                       : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
@@ -243,7 +243,7 @@ function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => togglePanel("trim")}
-                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
+                  className={`inline-flex items-center justify-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
                     activePanel === "trim"
                       ? "bg-primary/10 border-primary/40 text-primary"
                       : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
@@ -255,7 +255,7 @@ function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => togglePanel("references")}
-                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
+                  className={`inline-flex items-center justify-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
                     activePanel === "references"
                       ? "bg-primary/10 border-primary/40 text-primary"
                       : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
@@ -267,7 +267,7 @@ function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => togglePanel("script")}
-                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
+                  className={`inline-flex items-center justify-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border transition-colors ${
                     activePanel === "script"
                       ? "bg-primary/10 border-primary/40 text-primary"
                       : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
