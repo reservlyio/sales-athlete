@@ -217,7 +217,7 @@ function SettingsPage() {
           <CollapsibleContent>
             <div className="space-y-3 mt-3">
               {embedUrl && (
-                <div className="aspect-video rounded-md overflow-hidden border border-border mb-4">
+                <div className="aspect-[4/3] sm:aspect-video rounded-md overflow-hidden border border-border mb-4">
                   <iframe
                     src={embedUrl}
                     title="Training video"
@@ -227,7 +227,7 @@ function SettingsPage() {
                   />
                 </div>
               )}
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap mt-5 sm:mt-3">
                 <button
                   type="button"
                   onClick={() => togglePanel("link")}
