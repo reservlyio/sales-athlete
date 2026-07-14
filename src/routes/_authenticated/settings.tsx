@@ -111,6 +111,7 @@ function SettingsPage() {
   const [scriptFilename, setScriptFilename] = useState<string | null>(null);
   const [pendingScriptFile, setPendingScriptFile] = useState<File | null>(null);
   const [removeScript, setRemoveScript] = useState(false);
+  const [editingScriptName, setEditingScriptName] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const startSec = useMemo(() => parseTimeToSeconds(videoStart), [videoStart]);
   const endSec = useMemo(() => parseTimeToSeconds(videoEnd), [videoEnd]);
@@ -127,6 +128,7 @@ function SettingsPage() {
       setScriptFilename(settings.data.training_script_filename ?? null);
       setPendingScriptFile(null);
       setRemoveScript(false);
+      setEditingScriptName(false);
       setActivePanel(null);
     }
   }, [settings.data]);
@@ -389,9 +391,32 @@ function SettingsPage() {
                   ) : scriptFilename && !removeScript ? (
                     <div className="flex items-center gap-2 text-xs">
                       <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
-                      <button type="button" onClick={downloadScript} className="flex-1 truncate text-left text-primary hover:underline">
-                        {scriptFilename}
-                      </button>
+                      {editingScriptName ? (
+                        <Input
+                          value={scriptFilename}
+                          onChange={(e) => setScriptFilename(e.target.value)}
+                          onBlur={() => setEditingScriptName(false)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") { e.preventDefault(); setEditingScriptName(false); }
+                          }}
+                          autoFocus
+                          className="h-7 flex-1 text-xs"
+                        />
+                      ) : (
+                        <button type="button" onClick={downloadScript} className="flex-1 truncate text-left text-primary hover:underline">
+                          {scriptFilename}
+                        </button>
+                      )}
+                      {!editingScriptName && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingScriptName(true)}
+                          title="Rename"
+                          className="text-muted-foreground hover:text-foreground shrink-0"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => setRemoveScript(true)}
