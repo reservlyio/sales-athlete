@@ -217,7 +217,7 @@ function SettingsPage() {
           <CollapsibleContent>
             <div className="space-y-3 mt-3">
               {embedUrl && (
-                <div className="aspect-[4/3] rounded-md overflow-hidden border border-border mb-4">
+                <div className="aspect-[1/1] rounded-md overflow-hidden border border-border mb-4">
                   <iframe
                     src={embedUrl}
                     title="Training video"
