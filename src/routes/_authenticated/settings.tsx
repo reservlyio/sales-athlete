@@ -110,6 +110,7 @@ function SettingsPage() {
   const [scriptPath, setScriptPath] = useState<string | null>(null);
   const [scriptFilename, setScriptFilename] = useState<string | null>(null);
   const [pendingScriptFile, setPendingScriptFile] = useState<File | null>(null);
+  const [pendingScriptName, setPendingScriptName] = useState<string>("");
   const [removeScript, setRemoveScript] = useState(false);
   const [editingScriptName, setEditingScriptName] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -127,6 +128,7 @@ function SettingsPage() {
       setScriptPath(settings.data.training_script_path ?? null);
       setScriptFilename(settings.data.training_script_filename ?? null);
       setPendingScriptFile(null);
+      setPendingScriptName("");
       setRemoveScript(false);
       setEditingScriptName(false);
       setActivePanel(null);
@@ -145,6 +147,7 @@ function SettingsPage() {
     const file = e.target.files?.[0];
     if (file) {
       setPendingScriptFile(file);
+      setPendingScriptName(file.name);
       setRemoveScript(false);
     }
     e.target.value = "";
@@ -171,7 +174,7 @@ function SettingsPage() {
         if (upErr) throw upErr;
         if (scriptPath) await supabase.storage.from(TRAINING_FILES_BUCKET).remove([scriptPath]);
         newScriptPath = path;
-        newScriptFilename = pendingScriptFile.name;
+        newScriptFilename = pendingScriptName.trim() || pendingScriptFile.name;
       } else if (removeScript && scriptPath) {
         await supabase.storage.from(TRAINING_FILES_BUCKET).remove([scriptPath]);
         newScriptPath = null;
@@ -379,10 +382,33 @@ function SettingsPage() {
                   {pendingScriptFile ? (
                     <div className="flex items-center gap-2 text-xs">
                       <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
-                      <span className="flex-1 truncate">Will upload on save: {pendingScriptFile.name}</span>
+                      {editingScriptName ? (
+                        <Input
+                          value={pendingScriptName}
+                          onChange={(e) => setPendingScriptName(e.target.value)}
+                          onBlur={() => setEditingScriptName(false)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") { e.preventDefault(); setEditingScriptName(false); }
+                          }}
+                          autoFocus
+                          className="h-7 flex-1 text-xs"
+                        />
+                      ) : (
+                        <span className="flex-1 truncate">Will upload on save: {pendingScriptName}</span>
+                      )}
+                      {!editingScriptName && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingScriptName(true)}
+                          title="Rename"
+                          className="text-muted-foreground hover:text-foreground shrink-0"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                       <button
                         type="button"
-                        onClick={() => setPendingScriptFile(null)}
+                        onClick={() => { setPendingScriptFile(null); setEditingScriptName(false); }}
                         className="text-muted-foreground hover:text-destructive shrink-0"
                       >
                         <X className="h-3.5 w-3.5" />
