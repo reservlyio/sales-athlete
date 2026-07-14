@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { toast } from "sonner";
-import { ChevronDown, Video, Link2, FileText, X, Pencil, Target } from "lucide-react";
+import { ChevronDown, Video, Link2, FileText, X, Pencil, Settings as SettingsIcon } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 
@@ -100,7 +100,7 @@ function SettingsPage() {
   const [videoUrl, setVideoUrl] = useState<string>("");
   const [videoStart, setVideoStart] = useState<string>("");
   const [videoEnd, setVideoEnd] = useState<string>("");
-  const [trainingOpen, setTrainingOpen] = useState(false);
+  const [trainingOpen, setTrainingOpen] = useState(true);
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [referenceUrls, setReferenceUrls] = useState<string[]>([]);
   const [newReferenceUrl, setNewReferenceUrl] = useState("");
@@ -127,7 +127,6 @@ function SettingsPage() {
       setScriptFilename(settings.data.training_script_filename ?? null);
       setPendingScriptFile(null);
       setRemoveScript(false);
-      setTrainingOpen(false);
       setActivePanel(null);
     }
   }, [settings.data]);
@@ -218,7 +217,7 @@ function SettingsPage() {
           <CollapsibleContent>
             <div className="space-y-3 mt-3">
               {embedUrl && (
-                <div className="aspect-video rounded-md overflow-hidden border border-border mb-2">
+                <div className="aspect-video rounded-md overflow-hidden border border-border mb-4">
                   <iframe
                     src={embedUrl}
                     title="Training video"
@@ -427,8 +426,8 @@ function SettingsPage() {
         <div className="bg-card border border-border rounded-xl p-4 mb-8">
           <CollapsibleTrigger className="w-full flex items-center justify-between cursor-pointer">
             <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-primary" />
-              <span className="font-semibold">Goal &amp; work days</span>
+              <SettingsIcon className="h-5 w-5 text-primary" />
+              <span className="font-semibold">Settings</span>
             </div>
             <ChevronDown
               className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${prefsOpen ? "rotate-180" : ""}`}
